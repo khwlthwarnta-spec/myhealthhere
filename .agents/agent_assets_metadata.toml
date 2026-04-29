@@ -1,0 +1,14 @@
+uploads = []
+outputs = []
+
+[[generated]]
+id = "1z1cl2d20qz3q0Lh5stRD"
+uri = "file://artifacts/health-awareness/public/hero-bg.png"
+type = "image"
+title = "Mint lavender abstract gradient"
+
+[[generated]]
+id = "VllOHihvdEGc4C_2tXCmY"
+uri = "file://artifacts/health-awareness/public/wellness-art.png"
+type = "image"
+title = "Soft botanical wellness illustration"
