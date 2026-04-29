@@ -5,7 +5,6 @@ import { Determinants } from "@/components/sections/Determinants";
 import { Curriculum } from "@/components/sections/Curriculum";
 import { Outcomes } from "@/components/sections/Outcomes";
 import { DiscoverYourself } from "@/components/sections/DiscoverYourself";
-import { AIAssistant } from "@/components/sections/AIAssistant";
 
 export default function Home() {
   return (
@@ -19,7 +18,6 @@ export default function Home() {
         <DiscoverYourself />
       </main>
       <Footer />
-      <AIAssistant />
     </div>
   );
 }
