@@ -40,6 +40,9 @@ import {
   Download,
   MapPin,
   User2,
+  HelpCircle,
+  AlertTriangle,
+  X,
 } from "lucide-react";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas-pro";
@@ -61,6 +64,8 @@ const formSchema = z.object({
     .number({ invalid_type_error: "أدخل رقماً صحيحاً" })
     .min(10, "العمر يجب أن يكون أكثر من 10")
     .max(100, "العمر غير منطقي"),
+  conditions: z.string().optional(),
+  allergies: z.string().optional(),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -95,6 +100,67 @@ const SOURCES = [
   { name: "الجمعية الأمريكية للقلب", url: "https://www.heart.org" },
 ];
 
+function InfoTooltip({ title, what, normal, yours }: {
+  title: string;
+  what: string;
+  normal: string;
+  yours: string;
+}) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="w-5 h-5 rounded-full bg-muted/60 hover:bg-primary/20 text-muted-foreground hover:text-primary flex items-center justify-center transition-colors"
+        aria-label="معلومات"
+      >
+        <HelpCircle className="w-3.5 h-3.5" />
+      </button>
+      <AnimatePresence>
+        {open && (
+          <>
+            <div
+              className="fixed inset-0 z-40"
+              onClick={() => setOpen(false)}
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: -4 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: -4 }}
+              transition={{ duration: 0.15 }}
+              className="absolute left-0 top-7 z-50 w-64 rounded-2xl border bg-background shadow-xl p-4 text-right"
+            >
+              <div className="flex items-center justify-between mb-3">
+                <button onClick={() => setOpen(false)} className="text-muted-foreground hover:text-foreground">
+                  <X className="w-3.5 h-3.5" />
+                </button>
+                <span className="text-sm font-bold">{title}</span>
+              </div>
+              <div className="space-y-2 text-xs">
+                <div>
+                  <span className="text-muted-foreground block mb-0.5">ما هو؟</span>
+                  <p className="text-foreground leading-relaxed">{what}</p>
+                </div>
+                <div className="h-px bg-border" />
+                <div>
+                  <span className="text-muted-foreground block mb-0.5">المعدل الطبيعي للشخص العادي</span>
+                  <p className="font-semibold text-emerald-500">{normal}</p>
+                </div>
+                <div className="h-px bg-border" />
+                <div>
+                  <span className="text-muted-foreground block mb-0.5">حالتك أنت</span>
+                  <p className="font-bold text-primary">{yours}</p>
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
 export function DiscoverYourself() {
   const [isOpen, setIsOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -108,6 +174,8 @@ export function DiscoverYourself() {
     defaultValues: {
       city: "",
       gender: undefined as any,
+      conditions: "",
+      allergies: "",
     },
   });
 
@@ -186,6 +254,7 @@ export function DiscoverYourself() {
           "بطيخ، شمام، خيار، أو عصير ليمون بالنعنع بدون سكر مضاف للحفاظ على ترطيب الجسم.",
       },
     ];
+    void gender;
   };
 
   const onSubmit = (data: FormData) => {
@@ -211,24 +280,19 @@ export function DiscoverYourself() {
         bmiColor = "text-rose-500";
       }
 
-      // Map BMI 15-40 -> 0-100% for the gauge
       const bmiPercent = Math.max(0, Math.min(100, ((bmi - 15) / 25) * 100));
 
-      // Mifflin-St Jeor (gender-specific)
       const bmrBase = 10 * data.weight + 6.25 * data.height - 5 * data.age;
       const bmr =
         data.gender === "male" ? bmrBase + 5 : bmrBase - 161;
-      const calories = Math.round(bmr * 1.55); // moderate activity
+      const calories = Math.round(bmr * 1.55);
 
-      // Water (ml) ~ 35 ml per kg
-      const water = +(data.weight * 0.035).toFixed(1); // liters
+      const water = +(data.weight * 0.035).toFixed(1);
 
-      // Sleep recommendation by age
       let sleep = "7-9 ساعات";
       if (data.age < 18) sleep = "8-10 ساعات";
       else if (data.age >= 65) sleep = "7-8 ساعات";
 
-      // Exercise recommendation
       const exercise =
         data.age < 18
           ? "60 دقيقة من النشاط المعتدل إلى الشديد يومياً"
@@ -296,7 +360,6 @@ export function DiscoverYourself() {
       if (imgHeight <= pageHeight - margin * 2) {
         pdf.addImage(imgData, "PNG", margin, margin, imgWidth, imgHeight);
       } else {
-        // Slice the canvas across pages
         const pageContentHeightPx =
           ((pageHeight - margin * 2) / imgHeight) * canvas.height;
         let yPx = 0;
@@ -325,7 +388,6 @@ export function DiscoverYourself() {
           pdf.addImage(sliceData, "PNG", margin, margin, imgWidth, sliceImgHeight);
           yPx += sliceHeight;
         }
-        // suppress unused warnings
         void position;
         void remainingHeight;
         void pageOffset;
@@ -524,6 +586,35 @@ export function DiscoverYourself() {
                         </div>
                       </div>
 
+                      {/* Health conditions & allergies */}
+                      <div className="rounded-2xl border border-amber-400/30 bg-amber-50/30 dark:bg-amber-950/20 p-4 space-y-4">
+                        <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400">
+                          <AlertTriangle className="w-4 h-4" />
+                          <span className="text-sm font-semibold">معلومات طبية مهمة (اختياري)</span>
+                        </div>
+                        <p className="text-xs text-muted-foreground leading-relaxed">
+                          إن كنت تعاني من أمراض مزمنة أو حساسية غذائية، يُرجى ذكرها حتى ننبّهك لأخذ الحيطة — التحليل توعوي ولا يُغني عن طبيبك.
+                        </p>
+                        <div className="space-y-2">
+                          <Label htmlFor="conditions">الأمراض المزمنة</Label>
+                          <Input
+                            id="conditions"
+                            {...form.register("conditions")}
+                            className="bg-background/50 text-right"
+                            placeholder="مثال: السكري، ضغط الدم، أمراض القلب..."
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="allergies">الحساسية الغذائية</Label>
+                          <Input
+                            id="allergies"
+                            {...form.register("allergies")}
+                            className="bg-background/50 text-right"
+                            placeholder="مثال: حساسية الغلوتين، المكسرات، الألبان..."
+                          />
+                        </div>
+                      </div>
+
                       <Button
                         type="submit"
                         className="w-full py-6 text-lg rounded-xl mt-4"
@@ -592,8 +683,41 @@ export function DiscoverYourself() {
                           </div>
                         </div>
 
+                        {/* Medical warning if conditions/allergies provided */}
+                        {(results.data.conditions || results.data.allergies) && (
+                          <div className="rounded-2xl border border-amber-400/40 bg-amber-50/40 dark:bg-amber-950/20 p-4">
+                            <div className="flex items-center gap-2 mb-2 text-amber-600 dark:text-amber-400">
+                              <AlertTriangle className="w-4 h-4" />
+                              <span className="text-sm font-bold">تنبيه طبي مهم</span>
+                            </div>
+                            <p className="text-xs text-muted-foreground leading-relaxed mb-3">
+                              بناءً على ما ذكرته من حالاتك الصحية، نوصي بمراجعة طبيبك المختص قبل تطبيق أي تغيير في نظامك الغذائي أو البدني. التحليل أدناه توعوي عام ولا يأخذ حالتك الطبية بالحسبان بشكل كامل.
+                            </p>
+                            {results.data.conditions && (
+                              <div className="text-xs mb-1">
+                                <span className="font-semibold text-amber-600 dark:text-amber-400">الأمراض المذكورة: </span>
+                                <span className="text-foreground">{results.data.conditions}</span>
+                              </div>
+                            )}
+                            {results.data.allergies && (
+                              <div className="text-xs">
+                                <span className="font-semibold text-amber-600 dark:text-amber-400">الحساسية المذكورة: </span>
+                                <span className="text-foreground">{results.data.allergies}</span>
+                              </div>
+                            )}
+                          </div>
+                        )}
+
                         {/* BMI gauge */}
-                        <div className="rounded-3xl border bg-card p-6 shadow-sm">
+                        <div className="rounded-3xl border bg-card p-6 shadow-sm relative">
+                          <div className="absolute top-4 left-4">
+                            <InfoTooltip
+                              title="مؤشر كتلة الجسم"
+                              what="مقياس يُحدد تناسب وزنك مع طولك. يُحسب بقسمة وزنك (كغ) على مربع طولك (م)."
+                              normal="18.5 – 24.9 (الوزن الطبيعي)"
+                              yours={`${results.bmi} — ${results.bmiClass}`}
+                            />
+                          </div>
                           <div className="flex items-center justify-between mb-4">
                             <div>
                               <div className="text-sm text-muted-foreground">
@@ -644,6 +768,12 @@ export function DiscoverYourself() {
                             value={`${results.bmr}`}
                             unit="kcal"
                             tone="primary"
+                            tooltip={{
+                              title: "معدل الأيض الأساسي",
+                              what: "عدد السعرات التي يحرقها جسمك في الراحة التامة للحفاظ على وظائفه الحيوية.",
+                              normal: "1400 – 2000 kcal (يختلف بالجنس والعمر)",
+                              yours: `${results.bmr} kcal`,
+                            }}
                           />
                           <StatCard
                             icon={Apple}
@@ -651,6 +781,12 @@ export function DiscoverYourself() {
                             value={`${results.calories}`}
                             unit="kcal"
                             tone="accent"
+                            tooltip={{
+                              title: "السعرات اليومية",
+                              what: "إجمالي السعرات التي تحتاجها يومياً مع نشاط بدني معتدل للحفاظ على وزنك.",
+                              normal: "1800 – 2500 kcal (يختلف بالجنس والنشاط)",
+                              yours: `${results.calories} kcal`,
+                            }}
                           />
                           <StatCard
                             icon={Droplets}
@@ -658,6 +794,12 @@ export function DiscoverYourself() {
                             value={`${results.water}`}
                             unit="لتر/يوم"
                             tone="sky"
+                            tooltip={{
+                              title: "كمية الماء اليومية",
+                              what: "الحد الأدنى من الماء اللازم لترطيب الجسم وتشغيل الأعضاء بشكل سليم.",
+                              normal: "2.0 – 3.0 لتر/يوم للبالغين",
+                              yours: `${results.water} لتر/يوم`,
+                            }}
                           />
                           <StatCard
                             icon={Moon}
@@ -665,6 +807,12 @@ export function DiscoverYourself() {
                             value={results.sleep.split(" ")[0]}
                             unit="ساعات"
                             tone="violet"
+                            tooltip={{
+                              title: "ساعات النوم",
+                              what: "مدة النوم اللازمة يومياً لتعافي الجسم وتحسين المزاج والتركيز.",
+                              normal: "7 – 9 ساعات للبالغين",
+                              yours: results.sleep,
+                            }}
                           />
                         </div>
 
@@ -800,12 +948,14 @@ function StatCard({
   value,
   unit,
   tone,
+  tooltip,
 }: {
   icon: React.ComponentType<{ className?: string }>;
   label: string;
   value: string;
   unit: string;
   tone: "primary" | "accent" | "sky" | "violet";
+  tooltip?: { title: string; what: string; normal: string; yours: string };
 }) {
   const tones: Record<string, string> = {
     primary: "from-primary/15 to-primary/5 text-primary",
@@ -815,8 +965,13 @@ function StatCard({
   };
   return (
     <div
-      className={`rounded-2xl border bg-gradient-to-br ${tones[tone]} p-4 flex flex-col items-center text-center`}
+      className={`rounded-2xl border bg-gradient-to-br ${tones[tone]} p-4 flex flex-col items-center text-center relative`}
     >
+      {tooltip && (
+        <div className="absolute top-2 left-2">
+          <InfoTooltip {...tooltip} />
+        </div>
+      )}
       <Icon className="w-5 h-5 mb-2" />
       <div className="text-[11px] text-muted-foreground mb-1">{label}</div>
       <div className="text-xl font-bold leading-none">{value}</div>
