@@ -58,7 +58,6 @@ export function Navbar() {
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <span className="text-xl font-bold text-primary">صحتك أولاً</span>
-          <span className="text-sm px-2 py-1 bg-secondary/20 text-secondary-foreground rounded-full">الفصل 2/5</span>
         </div>
         
         <Button variant="ghost" size="icon" onClick={toggleTheme} className="rounded-full">
