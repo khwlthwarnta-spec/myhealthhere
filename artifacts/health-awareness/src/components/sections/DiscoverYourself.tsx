@@ -24,13 +24,14 @@ import {
   ExternalLink, Sparkles, Loader2, Activity, Flame, Apple,
   Utensils, Coffee, Soup, Cookie, Droplets, Moon, Dumbbell,
   HeartPulse, Sun, Snowflake, Download, MapPin, User2,
-  HelpCircle, AlertTriangle, X, Trophy, Zap, Watch,
+  HelpCircle, AlertTriangle, X, Trophy, Zap,
   Share2, ImageDown, TrendingUp, CheckCircle2,
 } from "lucide-react";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas-pro";
 
 const formSchema = z.object({
+  name: z.string().min(2, "الرجاء إدخال اسمك"),
   city: z.string().min(2, "الرجاء إدخال اسم مدينة صحيح"),
   gender: z.enum(["male", "female"], { required_error: "الرجاء اختيار الجنس" } as any),
   weight: z.number({ invalid_type_error: "أدخل رقماً صحيحاً" }).min(30).max(300),
@@ -38,7 +39,6 @@ const formSchema = z.object({
   age: z.number({ invalid_type_error: "أدخل رقماً صحيحاً" }).min(10).max(100),
   conditions: z.string().optional(),
   allergies: z.string().optional(),
-  heartRate: z.number({ invalid_type_error: "أدخل رقماً صحيحاً" }).min(40).max(200).optional(),
 });
 
 type FormData = z.infer<typeof formSchema>;
@@ -53,9 +53,9 @@ type Meal = {
 type HealthScore = {
   total: number;
   bmiScore: number;
-  waterScore: number;
-  sleepScore: number;
-  heartScore: number;
+  precisionScore: number;
+  ageScore: number;
+  conditionsScore: number;
   label: string;
   color: string;
 };
@@ -137,10 +137,10 @@ function ScoreRing({ score, color }: { score: number; color: string }) {
 
 function HealthScoreSection({ score }: { score: HealthScore }) {
   const bars = [
-    { label: "مؤشر الكتلة", value: score.bmiScore, max: 40, color: "bg-primary" },
-    { label: "التوازن المائي", value: score.waterScore, max: 20, color: "bg-sky-500" },
-    { label: "جودة النوم", value: score.sleepScore, max: 20, color: "bg-violet-500" },
-    { label: "نبض القلب", value: score.heartScore, max: 20, color: "bg-rose-500" },
+    { label: "فئة مؤشر الكتلة", value: score.bmiScore, max: 35, color: "bg-primary" },
+    { label: "دقة الوزن المثالي", value: score.precisionScore, max: 25, color: "bg-sky-500" },
+    { label: "العمر الصحي", value: score.ageScore, max: 25, color: "bg-violet-500" },
+    { label: "الحالة الصحية", value: score.conditionsScore, max: 15, color: "bg-emerald-500" },
   ];
   const strokeColor =
     score.total >= 80 ? "#22c55e" : score.total >= 60 ? "#f59e0b" : "#ef4444";
@@ -397,7 +397,8 @@ function ShareableCard({ results, season }: { results: Results; season: string }
         <div className="flex items-center gap-3 mb-4">
           <div className="flex-1">
             <p className="text-xs text-muted-foreground">الاسم</p>
-            <p className="font-bold text-lg">{results.data.city} · {results.data.gender === "male" ? "ذكر" : "أنثى"} · {results.data.age} سنة</p>
+            <p className="font-bold text-lg">{results.data.name}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">{results.data.city} · {results.data.gender === "male" ? "ذكر" : "أنثى"} · {results.data.age} سنة</p>
           </div>
           <div className="text-center">
             <div className="text-3xl font-black" style={{ color: results.bmiColor.replace("text-", "").includes("emerald") ? "#22c55e" : results.bmiColor.replace("text-", "").includes("sky") ? "#0ea5e9" : results.bmiColor.replace("text-", "").includes("amber") ? "#f59e0b" : "#f43f5e" }}>
@@ -438,7 +439,7 @@ export function DiscoverYourself() {
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
-    defaultValues: { city: "", gender: undefined as any, conditions: "", allergies: "" },
+    defaultValues: { name: "", city: "", gender: undefined as any, conditions: "", allergies: "" },
   });
 
   useEffect(() => {
@@ -461,31 +462,42 @@ export function DiscoverYourself() {
     ];
   };
 
-  const calcHealthScore = (bmi: number, heartRate?: number): HealthScore => {
-    let bmiScore = 40;
-    if (bmi >= 18.5 && bmi < 25) bmiScore = 40;
-    else if ((bmi >= 25 && bmi < 27.5) || (bmi >= 17.5 && bmi < 18.5)) bmiScore = 30;
-    else if ((bmi >= 27.5 && bmi < 30) || (bmi >= 16 && bmi < 17.5)) bmiScore = 20;
-    else bmiScore = 10;
+  const calcHealthScore = (bmi: number, age: number, conditions?: string): HealthScore => {
+    // BMI Category (35 pts)
+    let bmiScore: number;
+    if (bmi >= 18.5 && bmi < 25) bmiScore = 35;
+    else if ((bmi >= 25 && bmi < 27) || (bmi >= 17.5 && bmi < 18.5)) bmiScore = 26;
+    else if ((bmi >= 27 && bmi < 30) || (bmi >= 16 && bmi < 17.5)) bmiScore = 17;
+    else bmiScore = 8;
 
-    const waterScore = 20;
-    const sleepScore = 20;
+    // BMI Precision — distance from ideal BMI 22 (25 pts)
+    const deviation = Math.abs(bmi - 22);
+    let precisionScore: number;
+    if (deviation <= 1) precisionScore = 25;
+    else if (deviation <= 2.5) precisionScore = 20;
+    else if (deviation <= 4) precisionScore = 14;
+    else if (deviation <= 6) precisionScore = 8;
+    else precisionScore = 3;
 
-    let heartScore = 20;
-    if (heartRate !== undefined) {
-      if (heartRate >= 60 && heartRate <= 80) heartScore = 20;
-      else if ((heartRate >= 50 && heartRate < 60) || (heartRate > 80 && heartRate <= 100)) heartScore = 15;
-      else heartScore = 8;
-    }
+    // Age health factor (25 pts)
+    let ageScore: number;
+    if (age >= 18 && age <= 30) ageScore = 25;
+    else if (age > 30 && age <= 45) ageScore = 20;
+    else if (age > 45 && age <= 60) ageScore = 14;
+    else if (age > 60) ageScore = 9;
+    else ageScore = 22;
 
-    const total = bmiScore + waterScore + sleepScore + heartScore;
+    // Health conditions (15 pts)
+    const conditionsScore = conditions && conditions.trim().length > 2 ? 6 : 15;
+
+    const total = Math.min(100, bmiScore + precisionScore + ageScore + conditionsScore);
     let label = "ممتاز";
     let color = "text-emerald-500";
-    if (total < 50) { label = "يحتاج تحسيناً"; color = "text-rose-500"; }
-    else if (total < 65) { label = "مقبول"; color = "text-amber-500"; }
-    else if (total < 80) { label = "جيد"; color = "text-sky-500"; }
+    if (total < 45) { label = "يحتاج تحسيناً"; color = "text-rose-500"; }
+    else if (total < 62) { label = "مقبول"; color = "text-amber-500"; }
+    else if (total < 78) { label = "جيد"; color = "text-sky-500"; }
 
-    return { total, bmiScore, waterScore, sleepScore, heartScore, label, color };
+    return { total, bmiScore, precisionScore, ageScore, conditionsScore, label, color };
   };
 
   const onSubmit = (data: FormData) => {
@@ -513,7 +525,7 @@ export function DiscoverYourself() {
       const seasonalAdvice = season === "شتاء"
         ? `في فصل الشتاء بمدينة ${data.city}، احرص على تعرّض يومي قصير للشمس لرفع فيتامين د، والإكثار من المشروبات الدافئة وتغطية الأطراف عند الخروج صباحاً.`
         : `في فصل الصيف بمدينة ${data.city}، تجنّب أشعة الشمس المباشرة بين 11ص و4م، اشرب الماء بانتظام حتى دون الشعور بالعطش، وارتدِ ملابس قطنية فاتحة.`;
-      const healthScore = calcHealthScore(+bmi.toFixed(1), data.heartRate);
+      const healthScore = calcHealthScore(+bmi.toFixed(1), data.age, data.conditions);
       setResults({ bmi: +bmi.toFixed(1), bmiClass, bmiColor, bmiPercent, bmr: Math.round(bmr), calories, water, sleep, exercise, meals, seasonalAdvice, healthScore, data });
       setIsSubmitting(false);
     }, 1800);
@@ -601,6 +613,12 @@ export function DiscoverYourself() {
                         {form.formState.errors.gender && <p className="text-xs text-destructive">{form.formState.errors.gender.message as string}</p>}
                       </div>
 
+                      <div className="space-y-2">
+                        <Label htmlFor="name">الاسم</Label>
+                        <Input id="name" {...form.register("name")} className="bg-background/50 text-right" placeholder="مثال: أحمد محمد" />
+                        {form.formState.errors.name && <p className="text-xs text-destructive">{form.formState.errors.name.message}</p>}
+                      </div>
+
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         {[
                           { id: "city", label: "المدينة", placeholder: "مثال: الرياض", type: "text", reg: form.register("city") },
@@ -614,21 +632,6 @@ export function DiscoverYourself() {
                             {(form.formState.errors as any)[f.id] && <p className="text-xs text-destructive">{(form.formState.errors as any)[f.id]?.message}</p>}
                           </div>
                         ))}
-                      </div>
-
-                      {/* Smartwatch heart rate */}
-                      <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4 space-y-3">
-                        <div className="flex items-center gap-2 text-primary">
-                          <Watch className="w-4 h-4" />
-                          <span className="text-sm font-semibold">بيانات الساعة الذكية (اختياري)</span>
-                        </div>
-                        <p className="text-xs text-muted-foreground">أدخل معدل ضربات قلبك من ساعتك الذكية (Apple Watch، Galaxy Watch، Fitbit…) لتحسين نقاط صحتك.</p>
-                        <div className="space-y-2">
-                          <Label htmlFor="heartRate">معدل نبض القلب (نبضة/دقيقة)</Label>
-                          <Input id="heartRate" type="number" {...form.register("heartRate", { valueAsNumber: true })}
-                            className="bg-background/50 text-right" placeholder="مثال: 72 (الطبيعي: 60-100)" />
-                          {form.formState.errors.heartRate && <p className="text-xs text-destructive">{form.formState.errors.heartRate.message}</p>}
-                        </div>
                       </div>
 
                       {/* Medical conditions */}
@@ -679,7 +682,7 @@ export function DiscoverYourself() {
                               <span className="inline-flex items-center gap-1.5 rounded-full bg-background/70 backdrop-blur px-3 py-1 border"><MapPin className="w-3 h-3" />{results.data.city}</span>
                               <span className="inline-flex items-center gap-1.5 rounded-full bg-background/70 backdrop-blur px-3 py-1 border"><User2 className="w-3 h-3" />{results.data.gender === "male" ? "ذكر" : "أنثى"} · {results.data.age} سنة</span>
                               <span className="inline-flex items-center gap-1.5 rounded-full bg-background/70 backdrop-blur px-3 py-1 border">{season === "صيف" ? <Sun className="w-3 h-3" /> : <Snowflake className="w-3 h-3" />}{season}</span>
-                              {results.data.heartRate && <span className="inline-flex items-center gap-1.5 rounded-full bg-background/70 backdrop-blur px-3 py-1 border"><HeartPulse className="w-3 h-3" />{results.data.heartRate} نبضة/د</span>}
+                              <span className="inline-flex items-center gap-1.5 rounded-full bg-background/70 backdrop-blur px-3 py-1 border"><HeartPulse className="w-3 h-3" />{results.data.name}</span>
                             </div>
                           </div>
                         </div>
