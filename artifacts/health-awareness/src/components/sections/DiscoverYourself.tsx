@@ -25,10 +25,15 @@ import {
   Utensils, Coffee, Soup, Cookie, Droplets, Moon, Dumbbell,
   HeartPulse, Sun, Snowflake, Download, MapPin, User2,
   HelpCircle, AlertTriangle, X, Trophy, Zap,
-  Share2, ImageDown, TrendingUp, CheckCircle2,
+  Share2, ImageDown, TrendingUp, CheckCircle2, Brain, BarChart2,
+  CalendarDays, FileText,
 } from "lucide-react";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas-pro";
+import {
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
+  ResponsiveContainer, RadarChart, PolarGrid, PolarAngleAxis, Radar, Legend,
+} from "recharts";
 
 const formSchema = z.object({
   name: z.string().min(2, "الرجاء إدخال اسمك"),
@@ -60,6 +65,14 @@ type HealthScore = {
   color: string;
 };
 
+type BioAge = {
+  bioAge: number;
+  diff: number;
+  color: string;
+  bgGradient: string;
+  message: string;
+};
+
 type Results = {
   bmi: number;
   bmiClass: string;
@@ -73,6 +86,7 @@ type Results = {
   meals: Meal[];
   seasonalAdvice: string;
   healthScore: HealthScore;
+  bioAge: BioAge;
   data: FormData;
 };
 
@@ -429,6 +443,121 @@ function ShareableCard({ results, season }: { results: Results; season: string }
   );
 }
 
+function BioAgeSection({ bioAge }: { bioAge: BioAge }) {
+  const isYounger = bioAge.diff < 0;
+  return (
+    <div className={`rounded-3xl border bg-gradient-to-br ${bioAge.bgGradient} p-6 shadow-sm`}>
+      <div className="flex items-center gap-2 mb-5">
+        <Brain className="w-5 h-5 text-primary" />
+        <h4 className="font-bold text-lg">عمرك البيولوجي</h4>
+      </div>
+      <div className="flex flex-col md:flex-row items-center gap-6">
+        <div className="text-center flex-shrink-0">
+          <motion.div className={`text-7xl font-black leading-none ${bioAge.color}`}
+            initial={{ scale: 0.5, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: "spring", stiffness: 200, delay: 0.2 }}>
+            {bioAge.bioAge}
+          </motion.div>
+          <div className="text-sm text-muted-foreground mt-2">سنة بيولوجياً</div>
+        </div>
+        <div className="flex-1 space-y-3">
+          <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold
+            ${isYounger ? "bg-emerald-500/20 text-emerald-600 dark:text-emerald-400" : bioAge.diff === 0 ? "bg-sky-500/20 text-sky-600" : "bg-rose-500/20 text-rose-600 dark:text-rose-400"}`}>
+            <CalendarDays className="w-4 h-4" />
+            {isYounger
+              ? `جسمك أصغر بـ ${Math.abs(bioAge.diff)} سنة من عمرك الحقيقي! 🎉`
+              : bioAge.diff === 0
+              ? "عمرك البيولوجي يتطابق مع عمرك الحقيقي"
+              : `جسمك أكبر بـ ${bioAge.diff} سنة من عمرك الحقيقي`}
+          </div>
+          <p className="text-sm text-muted-foreground leading-relaxed">{bioAge.message}</p>
+          <p className="text-[10px] text-muted-foreground">* يُحسب بناءً على مؤشر كتلة الجسم والحالة الصحية — مؤشر توعوي فقط.</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ComparisonChart({ results }: { results: Results }) {
+  const bmiUserScore = Math.round((results.healthScore.bmiScore / 35) * 100);
+  const waterIdeal = +(results.data.weight * 0.04).toFixed(1);
+  const waterScore = Math.min(100, Math.round((results.water / waterIdeal) * 100));
+  const sleepHours = parseInt(results.sleep.split("-")[0]);
+  const sleepScore = Math.min(100, Math.round((sleepHours / 8) * 100));
+  const overallScore = results.healthScore.total;
+
+  const data = [
+    { metric: "وزن الجسم", أنت: bmiUserScore, المثالي: 100 },
+    { metric: "الترطيب", أنت: waterScore, المثالي: 100 },
+    { metric: "النوم", أنت: sleepScore, المثالي: 100 },
+    { metric: "الصحة العامة", أنت: overallScore, المثالي: 100 },
+  ];
+
+  const radarData = [
+    { subject: "وزن الجسم", أنت: bmiUserScore, المثالي: 100 },
+    { subject: "الترطيب", أنت: waterScore, المثالي: 100 },
+    { subject: "النوم", أنت: sleepScore, المثالي: 100 },
+    { subject: "الصحة العامة", أنت: overallScore, المثالي: 100 },
+    { subject: "دقة الوزن", أنت: Math.round((results.healthScore.precisionScore / 25) * 100), المثالي: 100 },
+  ];
+
+  return (
+    <div className="rounded-3xl border bg-card p-6 shadow-sm">
+      <div className="flex items-center gap-2 mb-1">
+        <BarChart2 className="w-5 h-5 text-primary" />
+        <h4 className="font-bold text-lg">أنت مقابل المثالي</h4>
+      </div>
+      <p className="text-xs text-muted-foreground mb-5">مقارنة مؤشراتك الصحية بالقيم المثالية — كل محور من 100</p>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Bar chart */}
+        <div>
+          <p className="text-xs text-muted-foreground text-center mb-3 font-medium">مقارنة الأعمدة</p>
+          <ResponsiveContainer width="100%" height={200}>
+            <BarChart data={data} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+              <XAxis dataKey="metric" tick={{ fontSize: 9, fontFamily: "Tajawal", fill: "hsl(var(--foreground))" }} />
+              <YAxis tick={{ fontSize: 9 }} domain={[0, 100]} />
+              <Tooltip
+                contentStyle={{ backgroundColor: "hsl(var(--background))", border: "1px solid hsl(var(--border))", borderRadius: "12px", fontFamily: "Tajawal", direction: "rtl", fontSize: "12px" }}
+                formatter={(v: number, n: string) => [`${v}%`, n]}
+              />
+              <Bar dataKey="أنت" fill="hsl(var(--primary))" radius={[6, 6, 0, 0]} />
+              <Bar dataKey="المثالي" fill="hsl(var(--muted))" radius={[6, 6, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+
+        {/* Radar chart */}
+        <div>
+          <p className="text-xs text-muted-foreground text-center mb-3 font-medium">مخطط العنكبوت</p>
+          <ResponsiveContainer width="100%" height={200}>
+            <RadarChart data={radarData}>
+              <PolarGrid stroke="hsl(var(--border))" />
+              <PolarAngleAxis dataKey="subject" tick={{ fontSize: 9, fontFamily: "Tajawal", fill: "hsl(var(--foreground))" }} />
+              <Radar name="المثالي" dataKey="المثالي" stroke="hsl(var(--muted-foreground))" fill="hsl(var(--muted))" fillOpacity={0.3} />
+              <Radar name="أنت" dataKey="أنت" stroke="hsl(var(--primary))" fill="hsl(var(--primary))" fillOpacity={0.4} />
+              <Legend wrapperStyle={{ fontFamily: "Tajawal", fontSize: "11px" }} />
+            </RadarChart>
+          </ResponsiveContainer>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mt-4">
+        {data.map((d) => (
+          <div key={d.metric} className="rounded-xl bg-background border p-2.5 text-center">
+            <div className="text-[10px] text-muted-foreground mb-1">{d.metric}</div>
+            <div className="text-sm font-bold text-primary">{d.أنت}%</div>
+            <div className="h-1.5 rounded-full bg-muted/40 mt-1.5 overflow-hidden">
+              <motion.div className="h-full rounded-full bg-primary"
+                initial={{ width: 0 }} animate={{ width: `${d.أنت}%` }} transition={{ duration: 1.2 }} />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export function DiscoverYourself() {
   const [isOpen, setIsOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -436,6 +565,7 @@ export function DiscoverYourself() {
   const [season, setSeason] = useState<"صيف" | "شتاء">("صيف");
   const [downloading, setDownloading] = useState(false);
   const reportRef = useRef<HTMLDivElement>(null);
+  const pdfContentRef = useRef<HTMLDivElement>(null);
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -500,6 +630,30 @@ export function DiscoverYourself() {
     return { total, bmiScore, precisionScore, ageScore, conditionsScore, label, color };
   };
 
+  const calcBioAge = (bmi: number, age: number, conditions?: string): BioAge => {
+    let adj = 0;
+    if (bmi >= 18.5 && bmi < 25) adj -= 2;
+    else if (bmi >= 25 && bmi < 30) adj += 2;
+    else if (bmi >= 30) adj += 5;
+    else adj += 1;
+    if (Math.abs(bmi - 22) <= 1) adj -= 1;
+    if (conditions && conditions.trim().length > 2) adj += 3; else adj -= 1;
+    const bioAge = Math.max(age - 6, Math.min(age + 10, age + adj));
+    const diff = bioAge - age;
+    let color = "text-emerald-500";
+    let bgGradient = "from-emerald-500/15 to-emerald-500/5";
+    if (diff > 3) { color = "text-rose-500"; bgGradient = "from-rose-500/15 to-rose-500/5"; }
+    else if (diff > 0) { color = "text-amber-500"; bgGradient = "from-amber-500/15 to-amber-500/5"; }
+    else if (diff === 0) { color = "text-sky-500"; bgGradient = "from-sky-500/15 to-sky-500/5"; }
+    const message =
+      diff <= -3 ? "جسمك يعمل بكفاءة استثنائية — نمط حياتك الصحي يمنحك سنوات إضافية من الحيوية!"
+      : diff <= -1 ? "جسمك أصغر من عمرك الزمني — عاداتك الصحية الجيدة تؤتي ثمارها."
+      : diff === 0 ? "جسمك يتوافق تماماً مع عمرك الزمني — حافظ على هذا التوازن."
+      : diff <= 3 ? "بعض التحسينات في نمط حياتك ستساعد في تقليل عمرك البيولوجي."
+      : "تغييرات جذرية في التغذية والنشاط البدني ستُحدث فرقاً كبيراً في صحتك.";
+    return { bioAge, diff, color, bgGradient, message };
+  };
+
   const onSubmit = (data: FormData) => {
     setIsSubmitting(true);
     setTimeout(() => {
@@ -526,7 +680,8 @@ export function DiscoverYourself() {
         ? `في فصل الشتاء بمدينة ${data.city}، احرص على تعرّض يومي قصير للشمس لرفع فيتامين د، والإكثار من المشروبات الدافئة وتغطية الأطراف عند الخروج صباحاً.`
         : `في فصل الصيف بمدينة ${data.city}، تجنّب أشعة الشمس المباشرة بين 11ص و4م، اشرب الماء بانتظام حتى دون الشعور بالعطش، وارتدِ ملابس قطنية فاتحة.`;
       const healthScore = calcHealthScore(+bmi.toFixed(1), data.age, data.conditions);
-      setResults({ bmi: +bmi.toFixed(1), bmiClass, bmiColor, bmiPercent, bmr: Math.round(bmr), calories, water, sleep, exercise, meals, seasonalAdvice, healthScore, data });
+      const bioAge = calcBioAge(+bmi.toFixed(1), data.age, data.conditions);
+      setResults({ bmi: +bmi.toFixed(1), bmiClass, bmiColor, bmiPercent, bmr: Math.round(bmr), calories, water, sleep, exercise, meals, seasonalAdvice, healthScore, bioAge, data });
       setIsSubmitting(false);
     }, 1800);
   };
@@ -534,15 +689,19 @@ export function DiscoverYourself() {
   const resetForm = () => { setResults(null); form.reset(); };
 
   const handleDownloadPdf = async () => {
-    if (!reportRef.current || !results) return;
+    if (!pdfContentRef.current || !results) return;
     setDownloading(true);
     try {
-      const canvas = await html2canvas(reportRef.current, { scale: 2, backgroundColor: getComputedStyle(document.body).backgroundColor, useCORS: true });
+      const el = pdfContentRef.current;
+      el.style.display = "block";
+      await new Promise(r => setTimeout(r, 120));
+      const canvas = await html2canvas(el, { scale: 2.5, backgroundColor: "#ffffff", useCORS: true });
+      el.style.display = "none";
       const imgData = canvas.toDataURL("image/png");
       const pdf = new jsPDF({ orientation: "portrait", unit: "pt", format: "a4" });
       const pageWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
-      const margin = 24;
+      const margin = 20;
       const usableWidth = pageWidth - margin * 2;
       const imgHeight = usableWidth * (canvas.height / canvas.width);
       if (imgHeight <= pageHeight - margin * 2) {
@@ -561,8 +720,8 @@ export function DiscoverYourself() {
           yPx += sliceH;
         }
       }
-      pdf.save(`تحليلك-الصحي-${(results.data.city || "report").replace(/\s+/g, "_")}.pdf`);
-    } catch (e) { console.error("PDF export failed", e); }
+      pdf.save(`تقريرك-الصحي-${results.data.name.replace(/\s+/g, "_")}.pdf`);
+    } catch (e) { console.error("PDF export failed", e); if (pdfContentRef.current) pdfContentRef.current.style.display = "none"; }
     finally { setDownloading(false); }
   };
 
@@ -700,6 +859,12 @@ export function DiscoverYourself() {
                         {/* Health Score */}
                         <HealthScoreSection score={results.healthScore} />
 
+                        {/* Biological Age */}
+                        <BioAgeSection bioAge={results.bioAge} />
+
+                        {/* Comparison Chart */}
+                        <ComparisonChart results={results} />
+
                         {/* BMI gauge */}
                         <div className="rounded-3xl border bg-card p-6 shadow-sm relative">
                           <div className="absolute top-4 left-4">
@@ -808,6 +973,120 @@ export function DiscoverYourself() {
           </Dialog>
         </motion.div>
       </div>
+
+      {/* Hidden professional PDF document — shown only during PDF export */}
+      {results && (
+        <div ref={pdfContentRef} style={{ display: "none", position: "fixed", top: "-9999px", left: "-9999px", width: "794px", fontFamily: "Tajawal, sans-serif", direction: "rtl", background: "#ffffff", color: "#111" }}>
+          {/* PDF Header */}
+          <div style={{ background: "linear-gradient(135deg, #4ade80 0%, #818cf8 100%)", padding: "32px 40px", color: "#fff" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div style={{ fontSize: "12px", opacity: 0.85 }}>الفصل 2 / 5 — التوعية الصحية</div>
+              <div style={{ fontSize: "22px", fontWeight: 900 }}>🌿 صحتك أولاً</div>
+            </div>
+            <div style={{ marginTop: "16px" }}>
+              <div style={{ fontSize: "26px", fontWeight: 900 }}>تقرير صحي شخصي</div>
+              <div style={{ fontSize: "14px", opacity: 0.9, marginTop: "4px" }}>{results.data.name} — {results.data.city} — {results.data.gender === "male" ? "ذكر" : "أنثى"} — {results.data.age} سنة</div>
+            </div>
+          </div>
+
+          <div style={{ padding: "32px 40px" }}>
+            {/* Score + Bio Age row */}
+            <div style={{ display: "flex", gap: "16px", marginBottom: "24px" }}>
+              <div style={{ flex: 1, border: "1.5px solid #e5e7eb", borderRadius: "16px", padding: "20px", textAlign: "center" }}>
+                <div style={{ fontSize: "12px", color: "#6b7280", marginBottom: "8px" }}>نقاط الصحة الإجمالية</div>
+                <div style={{ fontSize: "52px", fontWeight: 900, color: results.healthScore.total >= 80 ? "#22c55e" : results.healthScore.total >= 62 ? "#f59e0b" : "#ef4444", lineHeight: 1 }}>{results.healthScore.total}</div>
+                <div style={{ fontSize: "12px", color: "#6b7280", marginTop: "4px" }}>/ 100 — {results.healthScore.label}</div>
+              </div>
+              <div style={{ flex: 1, border: "1.5px solid #e5e7eb", borderRadius: "16px", padding: "20px", textAlign: "center" }}>
+                <div style={{ fontSize: "12px", color: "#6b7280", marginBottom: "8px" }}>العمر البيولوجي</div>
+                <div style={{ fontSize: "52px", fontWeight: 900, color: results.bioAge.diff <= 0 ? "#22c55e" : results.bioAge.diff <= 3 ? "#f59e0b" : "#ef4444", lineHeight: 1 }}>{results.bioAge.bioAge}</div>
+                <div style={{ fontSize: "12px", color: "#6b7280", marginTop: "4px" }}>
+                  {results.bioAge.diff < 0 ? `أصغر بـ ${Math.abs(results.bioAge.diff)} سنة` : results.bioAge.diff === 0 ? "يتطابق مع العمر الحقيقي" : `أكبر بـ ${results.bioAge.diff} سنة`}
+                </div>
+              </div>
+              <div style={{ flex: 1, border: "1.5px solid #e5e7eb", borderRadius: "16px", padding: "20px", textAlign: "center" }}>
+                <div style={{ fontSize: "12px", color: "#6b7280", marginBottom: "8px" }}>مؤشر كتلة الجسم (BMI)</div>
+                <div style={{ fontSize: "52px", fontWeight: 900, color: results.bmi < 18.5 ? "#0ea5e9" : results.bmi < 25 ? "#22c55e" : results.bmi < 30 ? "#f59e0b" : "#ef4444", lineHeight: 1 }}>{results.bmi}</div>
+                <div style={{ fontSize: "12px", color: "#6b7280", marginTop: "4px" }}>{results.bmiClass}</div>
+              </div>
+            </div>
+
+            {/* Key metrics table */}
+            <div style={{ marginBottom: "24px" }}>
+              <div style={{ fontSize: "15px", fontWeight: 700, marginBottom: "12px", borderBottom: "2px solid #f3f4f6", paddingBottom: "8px" }}>المؤشرات الصحية الأساسية</div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+                {[
+                  { label: "معدل الأيض الأساسي (BMR)", value: `${results.bmr} kcal/يوم`, icon: "🔥" },
+                  { label: "السعرات اليومية الموصى بها", value: `${results.calories} kcal/يوم`, icon: "🍎" },
+                  { label: "الماء اليومي الضروري", value: `${results.water} لتر/يوم`, icon: "💧" },
+                  { label: "ساعات النوم الموصى بها", value: results.sleep, icon: "🌙" },
+                  { label: "النشاط البدني الأسبوعي", value: results.exercise, icon: "🏃" },
+                  { label: "الموسم الحالي", value: season, icon: season === "صيف" ? "☀️" : "❄️" },
+                ].map((m) => (
+                  <div key={m.label} style={{ border: "1px solid #f3f4f6", borderRadius: "12px", padding: "14px 16px", background: "#fafafa" }}>
+                    <div style={{ fontSize: "11px", color: "#6b7280", marginBottom: "4px" }}>{m.icon} {m.label}</div>
+                    <div style={{ fontSize: "14px", fontWeight: 700 }}>{m.value}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Health score breakdown */}
+            <div style={{ marginBottom: "24px" }}>
+              <div style={{ fontSize: "15px", fontWeight: 700, marginBottom: "12px", borderBottom: "2px solid #f3f4f6", paddingBottom: "8px" }}>تفصيل نقاط الصحة</div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: "10px" }}>
+                {[
+                  { label: "فئة مؤشر الكتلة", score: results.healthScore.bmiScore, max: 35 },
+                  { label: "دقة الوزن المثالي", score: results.healthScore.precisionScore, max: 25 },
+                  { label: "العمر الصحي", score: results.healthScore.ageScore, max: 25 },
+                  { label: "الحالة الصحية", score: results.healthScore.conditionsScore, max: 15 },
+                ].map((b) => (
+                  <div key={b.label} style={{ border: "1px solid #f3f4f6", borderRadius: "12px", padding: "12px", textAlign: "center", background: "#fafafa" }}>
+                    <div style={{ fontSize: "10px", color: "#6b7280", marginBottom: "6px" }}>{b.label}</div>
+                    <div style={{ fontSize: "20px", fontWeight: 900, color: "#818cf8" }}>{b.score}</div>
+                    <div style={{ fontSize: "10px", color: "#9ca3af" }}>/ {b.max}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Nutrition plan */}
+            <div style={{ marginBottom: "24px" }}>
+              <div style={{ fontSize: "15px", fontWeight: 700, marginBottom: "12px", borderBottom: "2px solid #f3f4f6", paddingBottom: "8px" }}>خطة التغذية المخصّصة ({season})</div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+                {results.meals.map((meal, i) => (
+                  <div key={i} style={{ border: "1px solid #f3f4f6", borderRadius: "12px", padding: "14px 16px", background: "#fafafa" }}>
+                    <div style={{ fontSize: "11px", color: "#6b7280", marginBottom: "4px" }}>{meal.label}</div>
+                    <div style={{ fontSize: "13px", fontWeight: 700, marginBottom: "4px" }}>{meal.title}</div>
+                    <div style={{ fontSize: "11px", color: "#6b7280", lineHeight: 1.5 }}>{meal.description}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Bio age message */}
+            <div style={{ background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: "12px", padding: "16px 20px", marginBottom: "24px" }}>
+              <div style={{ fontSize: "13px", fontWeight: 700, color: "#166534", marginBottom: "6px" }}>🧠 تحليل العمر البيولوجي</div>
+              <div style={{ fontSize: "12px", color: "#15803d", lineHeight: 1.6 }}>{results.bioAge.message}</div>
+            </div>
+
+            {/* Seasonal advice */}
+            <div style={{ background: "#fffbeb", border: "1px solid #fde68a", borderRadius: "12px", padding: "16px 20px", marginBottom: "24px" }}>
+              <div style={{ fontSize: "13px", fontWeight: 700, color: "#92400e", marginBottom: "6px" }}>{season === "صيف" ? "☀️" : "❄️"} نصيحة موسمية</div>
+              <div style={{ fontSize: "12px", color: "#78350f", lineHeight: 1.6 }}>{results.seasonalAdvice}</div>
+            </div>
+
+            {/* Disclaimer */}
+            <div style={{ borderTop: "1px solid #e5e7eb", paddingTop: "16px", textAlign: "center" }}>
+              <div style={{ fontSize: "10px", color: "#9ca3af", lineHeight: 1.6 }}>
+                هذا التقرير توعوي تعليمي ولا يُغني عن استشارة الطبيب المختص.<br />
+                المصادر: منظمة الصحة العالمية • مايو كلينك • هارفارد للصحة العامة • CDC<br />
+                صحتك أولاً — الفصل 2/5 | {new Date().toLocaleDateString("ar-SA")}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 }
