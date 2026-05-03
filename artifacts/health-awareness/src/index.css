@@ -236,6 +236,24 @@
   }
 }
 
+/* ── Tour focus mode ── */
+html.tour-active section {
+  opacity: 0.22;
+  filter: blur(1.5px) grayscale(35%);
+  transition: opacity 0.55s ease, filter 0.55s ease;
+}
+
+html.tour-active section.tour-focused {
+  opacity: 1;
+  filter: none;
+  position: relative;
+  z-index: 5;
+  transition: opacity 0.55s ease, filter 0.55s ease;
+  outline: 2px solid hsl(var(--primary) / 0.25);
+  outline-offset: -2px;
+  border-radius: 1.25rem;
+}
+
 @layer utilities {
   input[type="search"]::-webkit-search-cancel-button {
     @apply hidden;
