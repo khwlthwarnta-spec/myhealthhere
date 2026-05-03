@@ -2,25 +2,32 @@ import { useEffect } from "react";
 
 export function useGlowObserver() {
   useEffect(() => {
-    const observer = new IntersectionObserver(
+    let activeCard: Element | null = null;
+
+    // Observer for entering the center zone — triggers glow
+    const enterObserver = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
+            // Remove glow from previous active card
+            if (activeCard && activeCard !== entry.target) {
+              activeCard.classList.remove("glow-active");
+            }
             entry.target.classList.add("glow-active");
-          } else {
-            entry.target.classList.remove("glow-active");
+            activeCard = entry.target;
           }
         });
       },
       {
-        threshold: 0.25,
-        rootMargin: "-5% 0px -5% 0px",
+        // Only trigger when card is roughly centered on screen
+        threshold: 0,
+        rootMargin: "-30% 0px -30% 0px",
       }
     );
 
     const observe = () => {
       const cards = document.querySelectorAll(".glow-card");
-      cards.forEach((card) => observer.observe(card));
+      cards.forEach((card) => enterObserver.observe(card));
     };
 
     observe();
@@ -29,7 +36,7 @@ export function useGlowObserver() {
     mutationObserver.observe(document.body, { childList: true, subtree: true });
 
     return () => {
-      observer.disconnect();
+      enterObserver.disconnect();
       mutationObserver.disconnect();
     };
   }, []);
