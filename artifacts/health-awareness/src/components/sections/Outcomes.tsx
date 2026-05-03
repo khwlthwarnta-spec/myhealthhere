@@ -62,7 +62,7 @@ const outcomes = [
 
 export function Outcomes() {
   return (
-    <section className="py-24 bg-card">
+    <section id="outcomes" className="py-24 bg-card">
       <div className="container mx-auto px-4">
         <div className="text-center max-w-2xl mx-auto mb-16">
           <motion.h2 

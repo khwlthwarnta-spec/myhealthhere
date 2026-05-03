@@ -26,7 +26,7 @@ const curriculum = [
 
 export function Curriculum() {
   return (
-    <section className="py-24 relative overflow-hidden">
+    <section id="curriculum" className="py-24 relative overflow-hidden">
       {/* Decorative background art */}
       <div className="absolute left-0 top-1/2 -translate-y-1/2 -z-10 opacity-30 dark:opacity-10 pointer-events-none">
         <img src="/wellness-art.png" alt="" className="w-96 max-w-full h-auto object-contain" />
