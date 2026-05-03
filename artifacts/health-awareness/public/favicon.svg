@@ -1,3 +1,20 @@
 <svg width="180" height="180" viewBox="0 0 180 180" fill="none" xmlns="http://www.w3.org/2000/svg">
-<rect width="180" height="180" rx="36" fill="#FF3C00"/>
+  <rect width="180" height="180" rx="40" fill="url(#fvGrad)"/>
+  <path
+    d="M90 138C90 138 40 110 40 76C40 62.19 51.19 51 65 51C72.79 51 79.7 54.64 84.3 60.3C86.07 62.52 90 62.52 90.9 60.3C95.5 54.64 102.41 51 110.2 51C124.01 51 135.2 62.19 135.2 76C135.2 110 90 138 90 138Z"
+    fill="white"
+    fill-opacity="0.95"
+  />
+  <rect x="82" y="64" width="16" height="40" rx="8" fill="url(#fvPulse)"/>
+  <rect x="66" y="80" width="48" height="16" rx="8" fill="url(#fvPulse)"/>
+  <defs>
+    <linearGradient id="fvGrad" x1="0" y1="0" x2="180" y2="180" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#10b981"/>
+      <stop offset="1" stop-color="#7c3aed"/>
+    </linearGradient>
+    <linearGradient id="fvPulse" x1="0" y1="0" x2="180" y2="180" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#10b981"/>
+      <stop offset="1" stop-color="#7c3aed"/>
+    </linearGradient>
+  </defs>
 </svg>
