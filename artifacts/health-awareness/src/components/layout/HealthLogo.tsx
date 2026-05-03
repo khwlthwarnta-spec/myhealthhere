@@ -3,31 +3,52 @@ export function HealthLogo() {
     <div className="flex items-center gap-3 select-none">
       <div className="shrink-0">
         <svg
-          width="42"
-          height="42"
-          viewBox="0 0 42 42"
+          width="44"
+          height="40"
+          viewBox="0 0 44 40"
           fill="none"
           xmlns="http://www.w3.org/2000/svg"
           aria-label="شعار صحتك أولاً"
         >
-          <rect width="42" height="42" rx="12" fill="url(#logoGrad)" />
-          <path
-            d="M21 31C21 31 10 24.5 10 16.5C10 13.46 12.46 11 15.5 11C17.24 11 18.79 11.86 19.79 13.15C20.22 13.72 21 13.72 21.21 13.15C22.21 11.86 23.76 11 25.5 11C28.54 11 31 13.46 31 16.5C31 24.5 21 31 21 31Z"
-            fill="white"
-            fillOpacity="0.95"
-          />
-          <rect x="19.5" y="15" width="3" height="9" rx="1.5" fill="url(#pulseGrad)" />
-          <rect x="16" y="18.5" width="10" height="3" rx="1.5" fill="url(#pulseGrad)" />
+          {/* Heart shape as a clip path */}
           <defs>
-            <linearGradient id="logoGrad" x1="0" y1="0" x2="42" y2="42" gradientUnits="userSpaceOnUse">
+            <linearGradient id="heartGrad" x1="0" y1="0" x2="44" y2="40" gradientUnits="userSpaceOnUse">
               <stop stopColor="#10b981" />
               <stop offset="1" stopColor="#7c3aed" />
             </linearGradient>
-            <linearGradient id="pulseGrad" x1="0" y1="0" x2="42" y2="42" gradientUnits="userSpaceOnUse">
+            <linearGradient id="pulseLineGrad" x1="4" y1="22" x2="40" y2="22" gradientUnits="userSpaceOnUse">
               <stop stopColor="#10b981" />
+              <stop offset="0.5" stopColor="#a78bfa" />
               <stop offset="1" stopColor="#7c3aed" />
             </linearGradient>
+            <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+              <feGaussianBlur stdDeviation="1.2" result="blur" />
+              <feMerge>
+                <feMergeNode in="blur" />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
+            </filter>
           </defs>
+
+          {/* Heart outline */}
+          <path
+            d="M22 37C22 37 3 25.5 3 13.5C3 8.25 7.25 4 12.5 4C15.8 4 18.72 5.68 20.5 8.22C21.1 9.1 22.9 9.1 23.5 8.22C25.28 5.68 28.2 4 31.5 4C36.75 4 41 8.25 41 13.5C41 25.5 22 37 22 37Z"
+            stroke="url(#heartGrad)"
+            strokeWidth="2.2"
+            strokeLinejoin="round"
+            fill="none"
+          />
+
+          {/* ECG / pulse line inside the heart */}
+          <path
+            d="M5 21 L11 21 L13.5 15 L16 25 L18.5 18 L20.5 22 L22 19 L23.5 25 L26 14 L28.5 22 L31 21 L39 21"
+            stroke="url(#pulseLineGrad)"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            fill="none"
+            filter="url(#glow)"
+          />
         </svg>
       </div>
       <div className="flex flex-col leading-none gap-[3px]">

@@ -1,20 +1,36 @@
 <svg width="180" height="180" viewBox="0 0 180 180" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <rect width="180" height="180" rx="40" fill="url(#fvGrad)"/>
-  <path
-    d="M90 138C90 138 40 110 40 76C40 62.19 51.19 51 65 51C72.79 51 79.7 54.64 84.3 60.3C86.07 62.52 90 62.52 90.9 60.3C95.5 54.64 102.41 51 110.2 51C124.01 51 135.2 62.19 135.2 76C135.2 110 90 138 90 138Z"
-    fill="white"
-    fill-opacity="0.95"
-  />
-  <rect x="82" y="64" width="16" height="40" rx="8" fill="url(#fvPulse)"/>
-  <rect x="66" y="80" width="48" height="16" rx="8" fill="url(#fvPulse)"/>
+  <rect width="180" height="180" rx="40" fill="#0f172a"/>
   <defs>
-    <linearGradient id="fvGrad" x1="0" y1="0" x2="180" y2="180" gradientUnits="userSpaceOnUse">
+    <linearGradient id="hg" x1="0" y1="0" x2="180" y2="160" gradientUnits="userSpaceOnUse">
       <stop stop-color="#10b981"/>
       <stop offset="1" stop-color="#7c3aed"/>
     </linearGradient>
-    <linearGradient id="fvPulse" x1="0" y1="0" x2="180" y2="180" gradientUnits="userSpaceOnUse">
+    <linearGradient id="pg" x1="20" y1="90" x2="160" y2="90" gradientUnits="userSpaceOnUse">
       <stop stop-color="#10b981"/>
+      <stop offset="0.5" stop-color="#a78bfa"/>
       <stop offset="1" stop-color="#7c3aed"/>
     </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="3" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
   </defs>
+  <!-- Heart outline -->
+  <path
+    d="M90 152C90 152 18 112 18 62C18 40 36 22 58 22C70 22 80.5 27.8 87 37C88.6 39.4 91.4 39.4 93 37C99.5 27.8 110 22 122 22C144 22 162 40 162 62C162 112 90 152 90 152Z"
+    stroke="url(#hg)"
+    stroke-width="7"
+    stroke-linejoin="round"
+    fill="none"
+  />
+  <!-- ECG pulse line -->
+  <path
+    d="M22 90 L50 90 L60 60 L70 118 L80 75 L88 92 L94 78 L100 108 L112 55 L122 90 L140 90 L158 90"
+    stroke="url(#pg)"
+    stroke-width="6"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    fill="none"
+    filter="url(#glow)"
+  />
 </svg>
