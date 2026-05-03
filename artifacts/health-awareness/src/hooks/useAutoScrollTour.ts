@@ -1,6 +1,6 @@
 import { useRef, useState, useCallback, useEffect } from "react";
 
-const SCROLL_SPEED = 5;
+const SCROLL_SPEED = 2.5;
 
 export function useAutoScrollTour() {
   const [isActive, setIsActive] = useState(false);
