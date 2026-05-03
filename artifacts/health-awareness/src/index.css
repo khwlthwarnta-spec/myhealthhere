@@ -188,6 +188,10 @@
     scroll-behavior: smooth;
   }
 
+  html.auto-scrolling {
+    scroll-behavior: auto;
+  }
+
   body {
     @apply font-sans antialiased bg-background text-foreground overflow-x-hidden;
   }

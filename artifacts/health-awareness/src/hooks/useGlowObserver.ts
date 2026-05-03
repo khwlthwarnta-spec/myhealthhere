@@ -4,12 +4,10 @@ export function useGlowObserver() {
   useEffect(() => {
     let activeCard: Element | null = null;
 
-    // Observer for entering the center zone — triggers glow
     const enterObserver = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
-            // Remove glow from previous active card
             if (activeCard && activeCard !== entry.target) {
               activeCard.classList.remove("glow-active");
             }
@@ -19,9 +17,9 @@ export function useGlowObserver() {
         });
       },
       {
-        // Only trigger when card is roughly centered on screen
+        // Trigger only when card reaches the middle 50% of the screen
         threshold: 0,
-        rootMargin: "-30% 0px -30% 0px",
+        rootMargin: "-50% 0px -50% 0px",
       }
     );
 

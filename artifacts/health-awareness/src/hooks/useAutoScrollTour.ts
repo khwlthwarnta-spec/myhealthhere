@@ -1,6 +1,6 @@
 import { useRef, useState, useCallback, useEffect } from "react";
 
-const SCROLL_SPEED = 3.5;
+const SCROLL_SPEED = 5;
 
 export function useAutoScrollTour() {
   const [isActive, setIsActive] = useState(false);
@@ -13,6 +13,7 @@ export function useAutoScrollTour() {
       cancelAnimationFrame(rafRef.current);
       rafRef.current = null;
     }
+    document.documentElement.classList.remove("auto-scrolling");
     setIsActive(false);
   }, []);
 
@@ -20,6 +21,7 @@ export function useAutoScrollTour() {
     if (activeRef.current) return;
     activeRef.current = true;
     setIsActive(true);
+    document.documentElement.classList.add("auto-scrolling");
 
     const tick = () => {
       if (!activeRef.current) return;
@@ -27,12 +29,13 @@ export function useAutoScrollTour() {
       const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
       if (window.scrollY >= maxScroll - 2) {
         activeRef.current = false;
+        document.documentElement.classList.remove("auto-scrolling");
         setIsActive(false);
         rafRef.current = null;
         return;
       }
 
-      window.scrollBy(0, SCROLL_SPEED);
+      window.scrollBy({ top: SCROLL_SPEED, behavior: "instant" });
       rafRef.current = requestAnimationFrame(tick);
     };
 
@@ -42,6 +45,7 @@ export function useAutoScrollTour() {
   useEffect(() => {
     return () => {
       activeRef.current = false;
+      document.documentElement.classList.remove("auto-scrolling");
       if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
     };
   }, []);
