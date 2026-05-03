@@ -5,8 +5,11 @@ import { Determinants } from "@/components/sections/Determinants";
 import { Curriculum } from "@/components/sections/Curriculum";
 import { Outcomes } from "@/components/sections/Outcomes";
 import { DiscoverYourself } from "@/components/sections/DiscoverYourself";
+import { useGlowObserver } from "@/hooks/useGlowObserver";
 
 export default function Home() {
+  useGlowObserver();
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />

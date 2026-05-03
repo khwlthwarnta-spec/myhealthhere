@@ -1,5 +1,4 @@
 import { motion } from "framer-motion";
-import { CheckCircle2 } from "lucide-react";
 
 const curriculum = [
   {
@@ -27,14 +26,13 @@ const curriculum = [
 export function Curriculum() {
   return (
     <section id="curriculum" className="py-24 relative overflow-hidden">
-      {/* Decorative background art */}
       <div className="absolute left-0 top-1/2 -translate-y-1/2 -z-10 opacity-30 dark:opacity-10 pointer-events-none">
         <img src="/wellness-art.png" alt="" className="w-96 max-w-full h-auto object-contain" />
       </div>
 
       <div className="container mx-auto px-4 max-w-4xl">
         <div className="text-center mb-16">
-          <motion.h2 
+          <motion.h2
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
@@ -47,7 +45,7 @@ export function Curriculum() {
 
         <div className="relative border-r-2 border-primary/20 dark:border-primary/30 pr-8 ml-4 md:ml-0 md:pr-12">
           {curriculum.map((item, index) => (
-            <motion.div 
+            <motion.div
               key={index}
               initial={{ opacity: 0, x: -30 }}
               whileInView={{ opacity: 1, x: 0 }}
@@ -55,12 +53,11 @@ export function Curriculum() {
               transition={{ duration: 0.5, delay: index * 0.1 }}
               className="relative mb-12 last:mb-0"
             >
-              {/* Timeline Dot */}
               <div className="absolute -right-[41px] md:-right-[57px] top-1 w-6 h-6 rounded-full bg-background border-4 border-primary flex items-center justify-center z-10 shadow-sm">
                 <div className="w-2 h-2 rounded-full bg-primary" />
               </div>
-              
-              <div className="bg-card/60 backdrop-blur-md rounded-2xl p-6 shadow-sm border border-border/50 hover:border-primary/30 transition-colors">
+
+              <div className="glow-card bg-card/60 backdrop-blur-md rounded-2xl p-6 shadow-sm border border-border/50 hover:border-primary/30 transition-colors">
                 <div className="flex items-start gap-4">
                   <div className="flex-shrink-0 mt-1">
                     <span className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 text-primary font-bold text-sm">

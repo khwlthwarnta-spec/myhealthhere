@@ -65,7 +65,7 @@ export function Outcomes() {
     <section id="outcomes" className="py-24 bg-card">
       <div className="container mx-auto px-4">
         <div className="text-center max-w-2xl mx-auto mb-16">
-          <motion.h2 
+          <motion.h2
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
@@ -85,14 +85,14 @@ export function Outcomes() {
               viewport={{ once: true }}
               transition={{ delay: index * 0.2, duration: 0.6 }}
             >
-              <Card className="h-full border-none shadow-lg bg-background/50 hover:bg-background transition-colors duration-300">
+              <Card className="glow-card h-full border-none shadow-lg bg-background/50 hover:bg-background transition-colors duration-300">
                 <CardContent className="p-8 flex flex-col items-center text-center">
                   <div className="mb-6 p-4 rounded-2xl bg-muted/50">
                     {item.icon}
                   </div>
                   <h3 className="text-xl font-bold mb-3">{item.title}</h3>
                   <p className="text-muted-foreground mb-8">{item.description}</p>
-                  
+
                   <div className="mt-auto w-full pt-6 border-t border-border/50">
                     <Counter end={item.stat} label={item.statLabel} />
                   </div>

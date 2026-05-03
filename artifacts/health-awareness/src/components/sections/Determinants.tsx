@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
-import { Heart, Activity, Leaf, Apple, Brain, HomeIcon, Sun } from "lucide-react";
+import { Heart, Activity, Leaf, Apple, Brain, Sun } from "lucide-react";
 
 const determinants = [
   {
@@ -39,9 +39,7 @@ const containerVariants = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
-    transition: {
-      staggerChildren: 0.1
-    }
+    transition: { staggerChildren: 0.1 }
   }
 };
 
@@ -59,7 +57,7 @@ export function Determinants() {
     <section id="determinants" className="py-24 bg-muted/30">
       <div className="container mx-auto px-4">
         <div className="text-center max-w-2xl mx-auto mb-16">
-          <motion.h2 
+          <motion.h2
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
@@ -67,7 +65,7 @@ export function Determinants() {
           >
             محددات الصحة
           </motion.h2>
-          <motion.p 
+          <motion.p
             initial={{ opacity: 0 }}
             whileInView={{ opacity: 1 }}
             viewport={{ once: true }}
@@ -78,7 +76,7 @@ export function Determinants() {
           </motion.p>
         </div>
 
-        <motion.div 
+        <motion.div
           variants={containerVariants}
           initial="hidden"
           whileInView="visible"
@@ -87,7 +85,7 @@ export function Determinants() {
         >
           {determinants.map((item, index) => (
             <motion.div key={index} variants={itemVariants}>
-              <Card className="h-full bg-card/50 backdrop-blur-sm border-white/20 dark:border-white/10 hover:shadow-xl hover:-translate-y-2 transition-all duration-300">
+              <Card className="glow-card h-full bg-card/50 backdrop-blur-sm border-white/20 dark:border-white/10 hover:shadow-xl hover:-translate-y-2 transition-all duration-300">
                 <CardContent className="p-6 flex flex-col items-center text-center">
                   <div className="p-4 rounded-full bg-background/80 shadow-sm mb-4">
                     {item.icon}

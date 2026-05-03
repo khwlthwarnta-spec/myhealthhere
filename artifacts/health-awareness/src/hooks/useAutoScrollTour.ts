@@ -1,40 +1,50 @@
-import { useRef, useState, useCallback } from "react";
+import { useRef, useState, useCallback, useEffect } from "react";
 
-const SECTION_IDS = ["determinants", "curriculum", "outcomes", "discover"] as const;
-
-function setFocusedSection(id: string | null) {
-  SECTION_IDS.forEach((sid) => {
-    const el = document.getElementById(sid);
-    if (el) el.classList.toggle("tour-focused", sid === id);
-  });
-  if (id) document.documentElement.classList.add("tour-active");
-  else document.documentElement.classList.remove("tour-active");
-}
-
-export type AutoScrollProgress = {
-  sectionIndex: number;
-  sectionId: string;
-  totalSections: number;
-};
+const SCROLL_SPEED = 0.7;
 
 export function useAutoScrollTour() {
   const [isActive, setIsActive] = useState(false);
-  const [progress, setProgress] = useState<AutoScrollProgress | null>(null);
-  const abortRef = useRef<AbortController | null>(null);
-
-  const startTour = useCallback(() => {
-    if (isActive) return;
-    setIsActive(true);
-    setProgress({ sectionIndex: 0, sectionId: "determinants", totalSections: SECTION_IDS.length });
-    setFocusedSection("determinants");
-  }, [isActive]);
+  const rafRef = useRef<number | null>(null);
+  const activeRef = useRef(false);
 
   const stopTour = useCallback(() => {
-    abortRef.current?.abort();
-    setFocusedSection(null);
+    activeRef.current = false;
+    if (rafRef.current !== null) {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+    }
     setIsActive(false);
-    setProgress(null);
   }, []);
 
-  return { startTour, stopTour, isActive, progress };
+  const startTour = useCallback(() => {
+    if (activeRef.current) return;
+    activeRef.current = true;
+    setIsActive(true);
+
+    const tick = () => {
+      if (!activeRef.current) return;
+
+      const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
+      if (window.scrollY >= maxScroll - 2) {
+        activeRef.current = false;
+        setIsActive(false);
+        rafRef.current = null;
+        return;
+      }
+
+      window.scrollBy(0, SCROLL_SPEED);
+      rafRef.current = requestAnimationFrame(tick);
+    };
+
+    rafRef.current = requestAnimationFrame(tick);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      activeRef.current = false;
+      if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
+    };
+  }, []);
+
+  return { startTour, stopTour, isActive };
 }

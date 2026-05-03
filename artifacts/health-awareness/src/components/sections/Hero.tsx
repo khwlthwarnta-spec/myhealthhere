@@ -1,12 +1,20 @@
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Square } from "lucide-react";
+import { useAutoScrollTour } from "@/hooks/useAutoScrollTour";
 
 export function Hero() {
+  const { startTour, stopTour, isActive } = useAutoScrollTour();
+
   const handleDiscover = () => {
+    if (isActive) {
+      stopTour();
+      return;
+    }
     const firstSection = document.getElementById("determinants");
     if (firstSection) {
       firstSection.scrollIntoView({ behavior: "smooth" });
+      setTimeout(() => startTour(), 800);
     }
   };
 
@@ -33,14 +41,43 @@ export function Hero() {
             <Button
               size="lg"
               onClick={handleDiscover}
-              className="rounded-full px-8 py-6 text-lg shadow-lg hover:shadow-xl transition-all hover:-translate-y-1 bg-primary text-primary-foreground"
+              className={`rounded-full px-8 py-6 text-lg shadow-lg hover:shadow-xl transition-all hover:-translate-y-1 ${
+                isActive
+                  ? "bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  : "bg-primary text-primary-foreground"
+              }`}
             >
-              <span>ابدأ الاستكشاف</span>
-              <ArrowLeft className="mr-2 h-5 w-5" />
+              {isActive ? (
+                <><Square className="ml-2 h-5 w-5 fill-current" />إيقاف التمرير</>
+              ) : (
+                <><span>ابدأ الاستكشاف</span><ArrowLeft className="mr-2 h-5 w-5" /></>
+              )}
             </Button>
           </motion.div>
         </motion.div>
       </div>
+
+      <AnimatePresence>
+        {isActive && (
+          <motion.div
+            initial={{ opacity: 0, y: 40 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 40 }}
+            transition={{ duration: 0.35 }}
+            className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50"
+          >
+            <button
+              onClick={stopTour}
+              className="flex items-center gap-2 px-5 py-3 rounded-full bg-background/90 backdrop-blur border border-border shadow-xl text-sm font-semibold hover:bg-destructive hover:text-destructive-foreground hover:border-destructive transition-all duration-200"
+            >
+              <span className="text-[10px] uppercase tracking-[0.22em] text-muted-foreground">التمرير التلقائي</span>
+              <span className="mx-1 text-muted-foreground">·</span>
+              <Square className="w-3.5 h-3.5 fill-current" />
+              إيقاف
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </section>
   );
 }
