@@ -8,7 +8,6 @@ export function Footer() {
           <span><span className="text-foreground/60">المصمم</span> حمزه محمد</span>
           <span><span className="text-foreground/60">كتابة المواضيع</span> قتيبة مصطفى</span>
           <span><span className="text-foreground/60">جلب المصادر</span> محمد صالح</span>
-          <span><span className="text-foreground/60">التأكد والمراجعة</span> زاهر العلاوي</span>
         </div>
       </div>
     </footer>
