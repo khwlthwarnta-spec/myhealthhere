@@ -12,3 +12,15 @@ id = "VllOHihvdEGc4C_2tXCmY"
 uri = "file://artifacts/health-awareness/public/wellness-art.png"
 type = "image"
 title = "Soft botanical wellness illustration"
+
+[[generated]]
+id = "d1TiXsQP-vDuy0rTXh6BV"
+uri = "file://attached_assets/generated_images/generated_image.png"
+type = "image"
+title = "generated_image"
+
+[[generated]]
+id = "d-YmxFGp1al0_k7QMCixc"
+uri = "file://artifacts/sehatak-app/assets/images/icon.png"
+type = "image"
+title = "generated_image"

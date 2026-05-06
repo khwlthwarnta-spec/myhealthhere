@@ -1,0 +1,27 @@
+kind = "mobile"
+previewPath = "/sehatak-app/"
+title = "صحتك أولاً - التطبيق"
+version = "1.0.0"
+id = "artifacts/sehatak-app"
+router = "expo-domain"
+
+[[integratedSkills]]
+name = "expo"
+version = "1.0.0"
+
+[[services]]
+ensurePreviewReachable = "/status"
+name = "expo"
+paths = [ "/sehatak-app/" ]
+localPort = 25886
+
+[services.development]
+run = "pnpm --filter @workspace/sehatak-app run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/sehatak-app", "run", "build" ]
+run = [ "pnpm", "--filter", "@workspace/sehatak-app", "run", "serve" ]
+
+[services.env]
+PORT = "25886"
+BASE_PATH = "/sehatak-app/"
