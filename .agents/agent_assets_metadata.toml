@@ -1,5 +1,4 @@
 uploads = []
-outputs = []
 
 [[generated]]
 id = "1z1cl2d20qz3q0Lh5stRD"
@@ -24,3 +23,9 @@ id = "d-YmxFGp1al0_k7QMCixc"
 uri = "file://artifacts/sehatak-app/assets/images/icon.png"
 type = "image"
 title = "generated_image"
+
+[[outputs]]
+id = "va5CwtcwBJ1XvwxzvaqCh"
+uri = "file://sehatak-app.tar.gz"
+type = "unspecified"
+title = "sehatak-app.tar.gz — ملفات التطبيق"
