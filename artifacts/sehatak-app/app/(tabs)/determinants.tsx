@@ -9,6 +9,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { TOP_TAB_HEIGHT } from "@/components/TopTabBar";
 import { useColors } from "@/hooks/useColors";
 
 const determinants = [
@@ -60,7 +61,7 @@ export default function DeterminantsScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const isWeb = Platform.OS === "web";
-  const topPad = isWeb ? 67 : insets.top;
+  const topPad = isWeb ? 67 + TOP_TAB_HEIGHT : insets.top + TOP_TAB_HEIGHT;
 
   return (
     <ScrollView
@@ -83,12 +84,20 @@ export default function DeterminantsScreen() {
         {determinants.map((item, index) => (
           <View
             key={index}
-            style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}
+            style={[
+              styles.card,
+              {
+                backgroundColor: colors.card,
+                borderColor: item.color + "40",
+                shadowColor: item.color,
+                shadowOffset: { width: 0, height: 6 },
+                shadowOpacity: 0.2,
+                shadowRadius: 14,
+                elevation: 6,
+              },
+            ]}
           >
-            <LinearGradient
-              colors={[item.bg, "transparent"]}
-              style={styles.cardGradient}
-            />
+            <LinearGradient colors={[item.bg, "transparent"]} style={styles.cardGradient} />
             <View style={[styles.iconCircle, { backgroundColor: item.bg }]}>
               <MaterialCommunityIcons name={item.icon} size={28} color={item.color} />
             </View>
@@ -121,29 +130,14 @@ const styles = StyleSheet.create({
     overflow: "hidden",
     position: "relative",
   },
-  cardGradient: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 80,
-  },
+  cardGradient: { position: "absolute", top: 0, left: 0, right: 0, height: 80 },
   iconCircle: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    alignItems: "center",
-    justifyContent: "center",
-    alignSelf: "flex-end",
-    marginBottom: 12,
+    width: 56, height: 56, borderRadius: 28,
+    alignItems: "center", justifyContent: "center",
+    alignSelf: "flex-end", marginBottom: 12,
   },
   cardTitle: { fontSize: 18, fontWeight: "700", textAlign: "right", marginBottom: 8 },
   cardDesc: { fontSize: 14, textAlign: "right", lineHeight: 22, marginBottom: 12 },
-  cardBadge: {
-    alignSelf: "flex-end",
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 20,
-  },
+  cardBadge: { alignSelf: "flex-end", paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20 },
   cardBadgeText: { fontSize: 12, fontWeight: "700" },
 });

@@ -1,10 +1,8 @@
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
-import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import React from "react";
 import {
-  Dimensions,
   Platform,
   Pressable,
   ScrollView,
@@ -13,15 +11,14 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { AnimatedBackground } from "@/components/AnimatedBackground";
+import { TOP_TAB_HEIGHT } from "@/components/TopTabBar";
 import { useColors } from "@/hooks/useColors";
-
-const { width } = Dimensions.get("window");
 
 const team = [
   { role: "المبرمج", name: "حمزه نور الدين" },
   { role: "المصمم", name: "حمزه محمد" },
   { role: "كتابة المواضيع", name: "قتيبة مصطفى" },
-  { role: "جلب المصادر", name: "محمد صالح" },
 ];
 
 const quickCards = [
@@ -30,22 +27,11 @@ const quickCards = [
   { icon: "calculator-variant" as const, label: "حاسبة صحية", count: "BMI", color: "#38bdf8", tab: "discover" },
 ];
 
-function HeartLogo() {
-  const colors = useColors();
-  return (
-    <View style={styles.logoContainer}>
-      <View style={[styles.logoCircle, { borderColor: colors.primary + "40" }]}>
-        <MaterialCommunityIcons name="heart-pulse" size={36} color={colors.primary} />
-      </View>
-    </View>
-  );
-}
-
 export default function HomeScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const isWeb = Platform.OS === "web";
-  const topPad = isWeb ? 67 : insets.top;
+  const topPad = isWeb ? 67 + TOP_TAB_HEIGHT : insets.top + TOP_TAB_HEIGHT;
 
   return (
     <ScrollView
@@ -53,22 +39,22 @@ export default function HomeScreen() {
       contentContainerStyle={{ paddingBottom: isWeb ? 34 : insets.bottom + 20 }}
       showsVerticalScrollIndicator={false}
     >
-      {/* Hero */}
-      <LinearGradient
-        colors={[colors.primary + "20", colors.background]}
-        style={[styles.hero, { paddingTop: topPad + 20 }]}
-      >
-        <HeartLogo />
-        <Text style={[styles.heroTitle, { color: colors.foreground, fontFamily: "Tajawal_800ExtraBold" }]}>
-          صحتك أولاً
-        </Text>
-        <Text style={[styles.heroSubtitle, { color: colors.mutedForeground, fontFamily: "Tajawal_400Regular" }]}>
-          الفصل ٢ / ٥ • الوعي الصحي
-        </Text>
-        <Text style={[styles.heroDesc, { color: colors.mutedForeground, fontFamily: "Tajawal_400Regular" }]}>
-          رحلتك نحو الوعي الصحي تبدأ هنا. اكتشف كيف تؤثر عاداتك اليومية على صحتك العامة.
-        </Text>
-      </LinearGradient>
+      {/* Animated Hero */}
+      <View style={{ marginTop: topPad }}>
+        <AnimatedBackground />
+        {/* Overlay content */}
+        <View style={styles.heroOverlay} pointerEvents="none">
+          <View style={[styles.logoCircle, { borderColor: colors.primary + "60", backgroundColor: colors.background + "90" }]}>
+            <MaterialCommunityIcons name="heart-pulse" size={38} color={colors.primary} />
+          </View>
+          <Text style={[styles.heroTitle, { color: colors.foreground, fontFamily: "Tajawal_800ExtraBold" }]}>
+            صحتك أولاً
+          </Text>
+          <Text style={[styles.heroSubtitle, { color: colors.mutedForeground, fontFamily: "Tajawal_400Regular" }]}>
+            الفصل ٢ / ٥ • الوعي الصحي
+          </Text>
+        </View>
+      </View>
 
       {/* Quick access cards */}
       <View style={styles.section}>
@@ -88,12 +74,17 @@ export default function HomeScreen() {
                 {
                   backgroundColor: colors.card,
                   borderColor: colors.border,
-                  opacity: pressed ? 0.8 : 1,
-                  transform: [{ scale: pressed ? 0.97 : 1 }],
+                  opacity: pressed ? 0.85 : 1,
+                  transform: [{ scale: pressed ? 0.96 : 1 }],
+                  shadowColor: card.color,
+                  shadowOffset: { width: 0, height: 4 },
+                  shadowOpacity: 0.22,
+                  shadowRadius: 12,
+                  elevation: 6,
                 },
               ]}
             >
-              <View style={[styles.quickCardIcon, { backgroundColor: card.color + "20" }]}>
+              <View style={[styles.quickCardIcon, { backgroundColor: card.color + "22" }]}>
                 <MaterialCommunityIcons name={card.icon} size={26} color={card.color} />
               </View>
               <Text style={[styles.quickCardCount, { color: card.color, fontFamily: "Tajawal_700Bold" }]}>
@@ -107,18 +98,34 @@ export default function HomeScreen() {
         </View>
       </View>
 
-      {/* About section */}
+      {/* About */}
       <View style={styles.section}>
-        <View style={[styles.aboutCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <View style={styles.aboutHeader}>
-            <Ionicons name="information-circle" size={20} color={colors.primary} />
-            <Text style={[styles.aboutTitle, { color: colors.foreground, fontFamily: "Tajawal_700Bold" }]}>
-              عن هذا الفصل
+        <View
+          style={[
+            styles.aboutCard,
+            {
+              backgroundColor: colors.card,
+              borderColor: colors.border,
+              shadowColor: colors.primary,
+              shadowOffset: { width: 0, height: 4 },
+              shadowOpacity: 0.12,
+              shadowRadius: 16,
+              elevation: 5,
+            },
+          ]}
+        >
+          <View style={[styles.aboutAccent, { backgroundColor: colors.primary }]} />
+          <View style={styles.aboutInner}>
+            <View style={styles.aboutHeader}>
+              <Ionicons name="information-circle" size={20} color={colors.primary} />
+              <Text style={[styles.aboutTitle, { color: colors.foreground, fontFamily: "Tajawal_700Bold" }]}>
+                عن هذا الفصل
+              </Text>
+            </View>
+            <Text style={[styles.aboutText, { color: colors.mutedForeground, fontFamily: "Tajawal_400Regular" }]}>
+              صحتك ليست مجرد غياب للمرض، بل هي نتاج تفاعل معقد لعدة عوامل في حياتك. ستتعلم في هذا الفصل كيف تفهم محددات الصحة وتتحكم فيها لتبني حياة أفضل.
             </Text>
           </View>
-          <Text style={[styles.aboutText, { color: colors.mutedForeground, fontFamily: "Tajawal_400Regular" }]}>
-            صحتك ليست مجرد غياب للمرض، بل هي نتاج تفاعل معقد لعدة عوامل في حياتك. ستتعلم في هذا الفصل كيف تفهم محددات الصحة وتتحكم فيها لتبني حياة أفضل.
-          </Text>
         </View>
       </View>
 
@@ -127,7 +134,20 @@ export default function HomeScreen() {
         <Text style={[styles.sectionTitle, { color: colors.foreground, fontFamily: "Tajawal_700Bold" }]}>
           فريق العمل
         </Text>
-        <View style={[styles.teamCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+        <View
+          style={[
+            styles.teamCard,
+            {
+              backgroundColor: colors.card,
+              borderColor: colors.border,
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.07,
+              shadowRadius: 10,
+              elevation: 3,
+            },
+          ]}
+        >
           {team.map((member, i) => (
             <View
               key={i}
@@ -151,12 +171,13 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  hero: {
+  heroOverlay: {
+    position: "absolute",
+    top: 0, left: 0, right: 0, bottom: 0,
     alignItems: "center",
-    paddingHorizontal: 24,
-    paddingBottom: 32,
+    justifyContent: "center",
+    gap: 8,
   },
-  logoContainer: { marginBottom: 16 },
   logoCircle: {
     width: 80,
     height: 80,
@@ -165,15 +186,14 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  heroTitle: { fontSize: 36, fontWeight: "800", marginBottom: 4 },
-  heroSubtitle: { fontSize: 14, marginBottom: 12 },
-  heroDesc: { fontSize: 15, textAlign: "center", lineHeight: 24 },
+  heroTitle: { fontSize: 36, fontWeight: "800" },
+  heroSubtitle: { fontSize: 14 },
   section: { paddingHorizontal: 20, marginBottom: 20 },
   sectionTitle: { fontSize: 18, fontWeight: "700", marginBottom: 12, textAlign: "right" },
   cardsRow: { flexDirection: "row", gap: 10 },
   quickCard: {
     flex: 1,
-    borderRadius: 16,
+    borderRadius: 18,
     borderWidth: 1,
     padding: 14,
     alignItems: "center",
@@ -182,11 +202,18 @@ const styles = StyleSheet.create({
   quickCardIcon: { width: 50, height: 50, borderRadius: 25, alignItems: "center", justifyContent: "center" },
   quickCardCount: { fontSize: 20, fontWeight: "700" },
   quickCardLabel: { fontSize: 11, textAlign: "center" },
-  aboutCard: { borderRadius: 16, borderWidth: 1, padding: 16 },
+  aboutCard: {
+    borderRadius: 18,
+    borderWidth: 1,
+    overflow: "hidden",
+    flexDirection: "row",
+  },
+  aboutAccent: { width: 4 },
+  aboutInner: { flex: 1, padding: 16 },
   aboutHeader: { flexDirection: "row-reverse", alignItems: "center", gap: 8, marginBottom: 10 },
   aboutTitle: { fontSize: 16, fontWeight: "700" },
   aboutText: { fontSize: 14, lineHeight: 24, textAlign: "right" },
-  teamCard: { borderRadius: 16, borderWidth: 1, overflow: "hidden" },
+  teamCard: { borderRadius: 18, borderWidth: 1, overflow: "hidden" },
   teamRow: { flexDirection: "row-reverse", justifyContent: "space-between", alignItems: "center", padding: 14 },
   teamName: { fontSize: 14, fontWeight: "700" },
   teamRole: { fontSize: 13 },
