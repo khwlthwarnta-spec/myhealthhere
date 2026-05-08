@@ -1,28 +1,28 @@
-import { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import * as Haptics from "expo-haptics";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import React, { useState } from "react";
-import { Platform, Pressable, StyleSheet, Text, View, useColorScheme } from "react-native";
+import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
+import { useTheme } from "@/hooks/useTheme";
 import { BluetoothModal } from "./BluetoothModal";
 
 export const TOP_TAB_HEIGHT = 56;
 
 const TAB_ICONS: Record<string, { icon: string; label: string }> = {
-  index: { icon: "home", label: "الرئيسية" },
-  determinants: { icon: "heart-pulse", label: "المحددات" },
-  discover: { icon: "calculator-variant", label: "اكتشف" },
-  curriculum: { icon: "book-open-variant", label: "خطة التعلم" },
+  index:        { icon: "home",               label: "الرئيسية" },
+  determinants: { icon: "heart-pulse",        label: "المحددات" },
+  discover:     { icon: "calculator-variant", label: "اكتشف"    },
+  curriculum:   { icon: "book-open-variant",  label: "التعلم"   },
 };
 
-export function TopTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
+export function TopTabBar({ state, descriptors, navigation }: any) {
   const colors = useColors();
+  const { resolvedScheme, toggleTheme } = useTheme();
   const insets = useSafeAreaInsets();
-  const [btVisible, setBtVisible] = useState(false);
+  const [btVisible, setBtVisible]     = useState(false);
   const [btConnected, setBtConnected] = useState(false);
   const isWeb = Platform.OS === "web";
-
   const topPad = isWeb ? 0 : insets.top;
 
   return (
@@ -38,24 +38,46 @@ export function TopTabBar({ state, descriptors, navigation }: BottomTabBarProps)
         ]}
       >
         <View style={styles.inner}>
-          {/* Bluetooth button (right side in RTL) */}
-          <Pressable
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              setBtVisible(true);
-            }}
-            style={[styles.btBtn, { backgroundColor: btConnected ? colors.primary + "20" : colors.muted }]}
-          >
-            <MaterialCommunityIcons
-              name={btConnected ? "bluetooth-audio" : "bluetooth"}
-              size={20}
-              color={btConnected ? colors.primary : colors.mutedForeground}
-            />
-          </Pressable>
+          {/* Right side: Bluetooth + Theme toggle */}
+          <View style={styles.rightBtns}>
+            {/* Theme toggle */}
+            <Pressable
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                toggleTheme();
+              }}
+              style={[styles.iconBtn, { backgroundColor: colors.muted }]}
+            >
+              <MaterialCommunityIcons
+                name={resolvedScheme === "dark" ? "weather-sunny" : "weather-night"}
+                size={18}
+                color={colors.mutedForeground}
+              />
+            </Pressable>
+
+            {/* Bluetooth */}
+            <Pressable
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                setBtVisible(true);
+              }}
+              style={[
+                styles.iconBtn,
+                { backgroundColor: btConnected ? colors.primary + "25" : colors.muted },
+              ]}
+            >
+              <MaterialCommunityIcons
+                name={btConnected ? "bluetooth-audio" : "bluetooth"}
+                size={18}
+                color={btConnected ? colors.primary : colors.mutedForeground}
+              />
+              {btConnected && <View style={[styles.connectedDot, { backgroundColor: "#22c55e" }]} />}
+            </Pressable>
+          </View>
 
           {/* Tabs */}
           <View style={styles.tabs}>
-            {state.routes.map((route, index) => {
+            {state.routes.map((route: any, index: number) => {
               const isFocused = state.index === index;
               const tabInfo = TAB_ICONS[route.name] ?? { icon: "circle", label: route.name };
 
@@ -71,7 +93,7 @@ export function TopTabBar({ state, descriptors, navigation }: BottomTabBarProps)
                 <Pressable key={route.key} onPress={onPress} style={styles.tab}>
                   <MaterialCommunityIcons
                     name={tabInfo.icon as any}
-                    size={22}
+                    size={21}
                     color={isFocused ? colors.primary : colors.mutedForeground}
                   />
                   <Text
@@ -107,31 +129,42 @@ export function TopTabBar({ state, descriptors, navigation }: BottomTabBarProps)
 const styles = StyleSheet.create({
   container: {
     position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
+    top: 0, left: 0, right: 0,
     zIndex: 100,
     borderBottomWidth: 1,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
+    shadowOpacity: 0.08,
     shadowRadius: 8,
-    elevation: 4,
+    elevation: 6,
   },
   inner: {
     flexDirection: "row-reverse",
     alignItems: "center",
     height: TOP_TAB_HEIGHT,
-    paddingHorizontal: 12,
-    gap: 6,
+    paddingHorizontal: 10,
+    gap: 4,
   },
-  btBtn: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
+  rightBtns: {
+    flexDirection: "row-reverse",
+    alignItems: "center",
+    gap: 6,
+    flexShrink: 0,
+  },
+  iconBtn: {
+    width: 36, height: 36,
+    borderRadius: 18,
     alignItems: "center",
     justifyContent: "center",
-    flexShrink: 0,
+    position: "relative",
+  },
+  connectedDot: {
+    position: "absolute",
+    top: 4, right: 4,
+    width: 7, height: 7,
+    borderRadius: 4,
+    borderWidth: 1.5,
+    borderColor: "transparent",
   },
   tabs: {
     flex: 1,
@@ -153,8 +186,7 @@ const styles = StyleSheet.create({
   activeIndicator: {
     position: "absolute",
     bottom: 0,
-    left: "15%",
-    right: "15%",
+    left: "15%", right: "15%",
     height: 3,
     borderRadius: 3,
   },

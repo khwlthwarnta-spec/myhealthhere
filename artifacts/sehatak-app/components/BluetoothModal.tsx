@@ -2,8 +2,11 @@ import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import React, { useEffect, useRef, useState } from "react";
 import {
+  Alert,
   Animated,
   Modal,
+  PermissionsAndroid,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -13,31 +16,45 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
 
-type BtState = "idle" | "scanning" | "found" | "connected";
+type BtState = "idle" | "requesting" | "denied" | "scanning" | "found" | "connected";
 
 const DEVICES = [
-  { name: "Apple Watch Series 9", id: "AW-001", icon: "watch" as const },
-  { name: "Galaxy Watch 6", id: "GW-002", icon: "watch-variant" as const },
-  { name: "Fitbit Sense 2", id: "FB-003", icon: "watch" as const },
+  { name: "Apple Watch Series 9", id: "AW:5E:2F:A1:00", icon: "watch" as const, signal: -58 },
+  { name: "Galaxy Watch 6",       id: "GW:1C:9B:D4:02", icon: "watch-variant" as const, signal: -67 },
+  { name: "Fitbit Sense 2",       id: "FB:3A:7D:E0:03", icon: "watch" as const, signal: -74 },
+  { name: "Huawei Watch GT 4",    id: "HW:8B:C3:F2:04", icon: "watch-variant" as const, signal: -71 },
 ];
 
-const HEALTH_DATA = [
-  { icon: "heart-pulse", label: "معدل القلب", value: "72", unit: "نبضة/دقيقة", color: "#ef4444" },
-  { icon: "water", label: "تشبع الأكسجين", value: "98", unit: "%", color: "#38bdf8" },
-  { icon: "sleep", label: "النوم الليلة الماضية", value: "7.2", unit: "ساعة", color: "#a78bfa" },
-  { icon: "walk", label: "الخطوات اليوم", value: "8,542", unit: "خطوة", color: "#43a876" },
-  { icon: "fire", label: "السعرات المحروقة", value: "420", unit: "كيلوكالوري", color: "#f97316" },
-  { icon: "thermometer", label: "درجة حرارة الجسم", value: "36.7", unit: "°م", color: "#eab308" },
-];
+const BASE_HEALTH: Record<string, { icon: string; label: string; base: number; unit: string; color: string; decimals?: number; prefix?: string }> = {
+  heart:   { icon: "heart-pulse",  label: "معدل القلب",          base: 72,   unit: "نبضة/دقيقة", color: "#ef4444" },
+  spo2:    { icon: "water",        label: "تشبع الأكسجين",       base: 98,   unit: "%",           color: "#38bdf8" },
+  sleep:   { icon: "sleep",        label: "النوم الليلة الماضية", base: 7.2,  unit: "ساعة",        color: "#a78bfa", decimals: 1 },
+  steps:   { icon: "walk",         label: "الخطوات اليوم",       base: 8542, unit: "خطوة",        color: "#43a876" },
+  cals:    { icon: "fire",         label: "السعرات المحروقة",    base: 420,  unit: "كيلوكالوري",  color: "#f97316" },
+  temp:    { icon: "thermometer",  label: "حرارة الجسم",         base: 36.7, unit: "°م",          color: "#eab308", decimals: 1 },
+};
+
+function randVariation(base: number, pct: number, decimals = 0) {
+  const delta = base * pct * (Math.random() * 2 - 1);
+  const val = base + delta;
+  return decimals > 0 ? val.toFixed(decimals) : String(Math.round(val));
+}
+
+function generateHealthData() {
+  return Object.entries(BASE_HEALTH).map(([key, info]) => ({
+    ...info,
+    value: randVariation(info.base, 0.05, info.decimals ?? 0),
+  }));
+}
 
 function PulseRing({ color }: { color: string }) {
-  const scale = useRef(new Animated.Value(1)).current;
-  const opacity = useRef(new Animated.Value(0.6)).current;
+  const scale   = useRef(new Animated.Value(1)).current;
+  const opacity = useRef(new Animated.Value(0.7)).current;
   useEffect(() => {
     Animated.loop(
       Animated.parallel([
-        Animated.timing(scale, { toValue: 2.5, duration: 1500, useNativeDriver: true }),
-        Animated.timing(opacity, { toValue: 0, duration: 1500, useNativeDriver: true }),
+        Animated.timing(scale,   { toValue: 2.8, duration: 1400, useNativeDriver: true }),
+        Animated.timing(opacity, { toValue: 0,   duration: 1400, useNativeDriver: true }),
       ])
     ).start();
   }, []);
@@ -45,8 +62,7 @@ function PulseRing({ color }: { color: string }) {
     <Animated.View
       style={{
         position: "absolute",
-        width: 60,
-        height: 60,
+        width: 60, height: 60,
         borderRadius: 30,
         borderWidth: 2,
         borderColor: color,
@@ -55,6 +71,55 @@ function PulseRing({ color }: { color: string }) {
       }}
     />
   );
+}
+
+function SignalBars({ rssi }: { rssi: number }) {
+  const strength = rssi > -60 ? 4 : rssi > -70 ? 3 : rssi > -80 ? 2 : 1;
+  return (
+    <View style={{ flexDirection: "row", alignItems: "flex-end", gap: 2 }}>
+      {[1, 2, 3, 4].map((n) => (
+        <View
+          key={n}
+          style={{
+            width: 4,
+            height: 4 + n * 3,
+            borderRadius: 2,
+            backgroundColor: n <= strength ? "#43a876" : "#374151",
+          }}
+        />
+      ))}
+    </View>
+  );
+}
+
+async function requestBluetoothPermission(): Promise<boolean> {
+  if (Platform.OS !== "android") return true;
+  try {
+    if (Platform.Version >= 31) {
+      const results = await PermissionsAndroid.requestMultiple([
+        PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN,
+        PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT,
+        PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+      ]);
+      return (
+        results[PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN]    === PermissionsAndroid.RESULTS.GRANTED &&
+        results[PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT] === PermissionsAndroid.RESULTS.GRANTED
+      );
+    } else {
+      const result = await PermissionsAndroid.request(
+        PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+        {
+          title:   "إذن الموقع",
+          message: "يحتاج التطبيق إذن الموقع للبحث عن الأجهزة عبر البلوتوث",
+          buttonPositive: "سماح",
+          buttonNegative: "رفض",
+        }
+      );
+      return result === PermissionsAndroid.RESULTS.GRANTED;
+    }
+  } catch {
+    return false;
+  }
 }
 
 export function BluetoothModal({
@@ -70,6 +135,8 @@ export function BluetoothModal({
   const insets = useSafeAreaInsets();
   const [state, setState] = useState<BtState>("idle");
   const [connectedDevice, setConnectedDevice] = useState<string | null>(null);
+  const [healthData, setHealthData] = useState(generateHealthData());
+  const refreshTimer = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     if (!visible) {
@@ -77,15 +144,40 @@ export function BluetoothModal({
     }
   }, [visible]);
 
-  const startScan = () => {
+  // Refresh data every 15 seconds when connected
+  useEffect(() => {
+    if (state === "connected") {
+      refreshTimer.current = setInterval(() => {
+        setHealthData(generateHealthData());
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      }, 15000);
+    } else {
+      if (refreshTimer.current) {
+        clearInterval(refreshTimer.current);
+        refreshTimer.current = null;
+      }
+    }
+    return () => {
+      if (refreshTimer.current) clearInterval(refreshTimer.current);
+    };
+  }, [state]);
+
+  const startScan = async () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    setState("requesting");
+    const granted = await requestBluetoothPermission();
+    if (!granted) {
+      setState("denied");
+      return;
+    }
     setState("scanning");
-    setTimeout(() => setState("found"), 2500);
+    setTimeout(() => setState("found"), 2800);
   };
 
   const connect = (name: string) => {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setConnectedDevice(name);
+    setHealthData(generateHealthData());
     setState("connected");
     onConnect?.(true);
   };
@@ -113,7 +205,7 @@ export function BluetoothModal({
 
         <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
 
-          {/* Idle state */}
+          {/* Idle */}
           {state === "idle" && (
             <View style={styles.centerContent}>
               <View style={[styles.btIconWrap, { backgroundColor: colors.muted }]}>
@@ -128,7 +220,7 @@ export function BluetoothModal({
               <View style={[styles.noteBox, { backgroundColor: colors.accent, borderColor: colors.border }]}>
                 <Ionicons name="information-circle" size={16} color={colors.primary} />
                 <Text style={[styles.noteText, { color: colors.mutedForeground, fontFamily: "Tajawal_400Regular" }]}>
-                  يدعم Apple Watch، Samsung Galaxy Watch، Fitbit والمزيد
+                  يدعم Apple Watch، Samsung Galaxy Watch، Fitbit، Huawei Watch والمزيد
                 </Text>
               </View>
               <Pressable
@@ -141,10 +233,47 @@ export function BluetoothModal({
             </View>
           )}
 
-          {/* Scanning state */}
+          {/* Requesting permission */}
+          {state === "requesting" && (
+            <View style={styles.centerContent}>
+              <View style={[styles.btIconWrap, { backgroundColor: colors.accent }]}>
+                <MaterialCommunityIcons name="shield-check" size={48} color={colors.primary} />
+              </View>
+              <Text style={[styles.stateTitle, { color: colors.foreground, fontFamily: "Tajawal_700Bold" }]}>
+                طلب الإذن
+              </Text>
+              <Text style={[styles.stateDesc, { color: colors.mutedForeground, fontFamily: "Tajawal_400Regular" }]}>
+                يرجى السماح للتطبيق باستخدام البلوتوث من نافذة الأذونات
+              </Text>
+            </View>
+          )}
+
+          {/* Permission denied */}
+          {state === "denied" && (
+            <View style={styles.centerContent}>
+              <View style={[styles.btIconWrap, { backgroundColor: "#ef444420" }]}>
+                <MaterialCommunityIcons name="bluetooth-off" size={48} color="#ef4444" />
+              </View>
+              <Text style={[styles.stateTitle, { color: colors.foreground, fontFamily: "Tajawal_700Bold" }]}>
+                تم رفض الإذن
+              </Text>
+              <Text style={[styles.stateDesc, { color: colors.mutedForeground, fontFamily: "Tajawal_400Regular" }]}>
+                يحتاج التطبيق إذن البلوتوث لاكتشاف الساعات الذكية القريبة. يمكنك منح الإذن من إعدادات الجهاز.
+              </Text>
+              <Pressable
+                onPress={() => setState("idle")}
+                style={({ pressed }) => [styles.scanBtn, { backgroundColor: colors.primary, opacity: pressed ? 0.85 : 1 }]}
+              >
+                <Text style={[styles.scanBtnText, { fontFamily: "Tajawal_700Bold" }]}>حاول مجدداً</Text>
+              </Pressable>
+            </View>
+          )}
+
+          {/* Scanning */}
           {state === "scanning" && (
             <View style={styles.centerContent}>
               <View style={styles.pulseWrap}>
+                <PulseRing color={colors.primary} />
                 <PulseRing color={colors.primary} />
                 <View style={[styles.btIconWrap, { backgroundColor: colors.primary + "20" }]}>
                   <MaterialCommunityIcons name="bluetooth-audio" size={48} color={colors.primary} />
@@ -154,7 +283,7 @@ export function BluetoothModal({
                 جاري البحث...
               </Text>
               <Text style={[styles.stateDesc, { color: colors.mutedForeground, fontFamily: "Tajawal_400Regular" }]}>
-                يتم البحث عن الأجهزة المتاحة في محيطك
+                يبحث التطبيق عن الساعات الذكية في محيطك
               </Text>
             </View>
           )}
@@ -163,7 +292,7 @@ export function BluetoothModal({
           {state === "found" && (
             <View style={styles.devicesWrap}>
               <Text style={[styles.stateTitle, { color: colors.foreground, fontFamily: "Tajawal_700Bold", textAlign: "right" }]}>
-                الأجهزة المتاحة
+                الأجهزة المتاحة ({DEVICES.length})
               </Text>
               {DEVICES.map((device) => (
                 <Pressable
@@ -174,7 +303,10 @@ export function BluetoothModal({
                     { backgroundColor: colors.card, borderColor: colors.border, opacity: pressed ? 0.8 : 1 },
                   ]}
                 >
-                  <MaterialCommunityIcons name="chevron-left" size={20} color={colors.mutedForeground} />
+                  <View style={styles.deviceLeft}>
+                    <SignalBars rssi={device.signal} />
+                    <MaterialCommunityIcons name="chevron-left" size={20} color={colors.mutedForeground} />
+                  </View>
                   <View style={styles.deviceInfo}>
                     <Text style={[styles.deviceName, { color: colors.foreground, fontFamily: "Tajawal_700Bold" }]}>
                       {device.name}
@@ -191,11 +323,14 @@ export function BluetoothModal({
             </View>
           )}
 
-          {/* Connected state */}
+          {/* Connected */}
           {state === "connected" && (
             <View style={styles.connectedWrap}>
               <View style={[styles.connectedHeader, { backgroundColor: colors.primary + "15", borderColor: colors.primary + "30" }]}>
-                <MaterialCommunityIcons name="check-circle" size={28} color={colors.primary} />
+                <View style={styles.connectedBadge}>
+                  <View style={[styles.connectedDot, { backgroundColor: "#22c55e" }]} />
+                  <Text style={[styles.connectedLive, { color: "#22c55e", fontFamily: "Tajawal_700Bold" }]}>مباشر</Text>
+                </View>
                 <View>
                   <Text style={[styles.connectedLabel, { color: colors.mutedForeground, fontFamily: "Tajawal_400Regular" }]}>
                     متصل بـ
@@ -204,15 +339,23 @@ export function BluetoothModal({
                     {connectedDevice}
                   </Text>
                 </View>
+                <MaterialCommunityIcons name="check-circle" size={28} color={colors.primary} />
+              </View>
+
+              <View style={[styles.refreshNote, { backgroundColor: colors.accent }]}>
+                <Ionicons name="refresh-circle" size={14} color={colors.primary} />
+                <Text style={[styles.refreshText, { color: colors.mutedForeground, fontFamily: "Tajawal_400Regular" }]}>
+                  تتحدث البيانات تلقائياً كل 15 ثانية
+                </Text>
               </View>
 
               <Text style={[styles.dataTitle, { color: colors.foreground, fontFamily: "Tajawal_700Bold" }]}>
-                بيانات صحتك الآن
+                بياناتك الصحية الآن
               </Text>
 
               <View style={styles.healthGrid}>
-                {HEALTH_DATA.map((item, i) => (
-                  <View key={i} style={[styles.healthCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                {healthData.map((item, i) => (
+                  <View key={i} style={[styles.healthCard, { backgroundColor: colors.card, borderColor: item.color + "40" }]}>
                     <MaterialCommunityIcons name={item.icon as any} size={22} color={item.color} style={{ alignSelf: "flex-end" }} />
                     <Text style={[styles.healthValue, { color: item.color, fontFamily: "Tajawal_800ExtraBold" }]}>
                       {item.value}
@@ -229,10 +372,10 @@ export function BluetoothModal({
 
               <Pressable
                 onPress={disconnect}
-                style={({ pressed }) => [styles.disconnectBtn, { borderColor: colors.border, opacity: pressed ? 0.7 : 1 }]}
+                style={({ pressed }) => [styles.disconnectBtn, { borderColor: "#ef444450", opacity: pressed ? 0.7 : 1 }]}
               >
-                <MaterialCommunityIcons name="bluetooth-off" size={18} color={colors.mutedForeground} />
-                <Text style={[styles.disconnectText, { color: colors.mutedForeground, fontFamily: "Tajawal_700Bold" }]}>
+                <MaterialCommunityIcons name="bluetooth-off" size={18} color="#ef4444" />
+                <Text style={[styles.disconnectText, { color: "#ef4444", fontFamily: "Tajawal_700Bold" }]}>
                   قطع الاتصال
                 </Text>
               </Pressable>
@@ -259,16 +402,14 @@ const styles = StyleSheet.create({
   content: { padding: 20, alignItems: "center" },
   centerContent: { width: "100%", alignItems: "center", paddingVertical: 40, gap: 16 },
   btIconWrap: { width: 100, height: 100, borderRadius: 50, alignItems: "center", justifyContent: "center" },
-  pulseWrap: { width: 100, height: 100, alignItems: "center", justifyContent: "center" },
+  pulseWrap: { width: 100, height: 100, alignItems: "center", justifyContent: "center", marginBottom: 12 },
   stateTitle: { fontSize: 22, fontWeight: "700" },
   stateDesc: { fontSize: 14, textAlign: "center", lineHeight: 22, paddingHorizontal: 20 },
   noteBox: {
     flexDirection: "row-reverse",
     alignItems: "flex-start",
-    gap: 8,
-    padding: 12,
-    borderRadius: 12,
-    borderWidth: 1,
+    gap: 8, padding: 12,
+    borderRadius: 12, borderWidth: 1,
     width: "100%",
   },
   noteText: { fontSize: 13, lineHeight: 20, flex: 1, textAlign: "right" },
@@ -276,7 +417,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
-    paddingHorizontal: 32,
+    paddingHorizontal: 36,
     paddingVertical: 14,
     borderRadius: 14,
     marginTop: 8,
@@ -286,32 +427,40 @@ const styles = StyleSheet.create({
   deviceRow: {
     flexDirection: "row-reverse",
     alignItems: "center",
-    gap: 12,
-    padding: 16,
-    borderRadius: 16,
-    borderWidth: 1,
+    gap: 12, padding: 16,
+    borderRadius: 16, borderWidth: 1,
   },
+  deviceLeft: { flexDirection: "row", alignItems: "center", gap: 4 },
   deviceIcon: { width: 46, height: 46, borderRadius: 23, alignItems: "center", justifyContent: "center" },
   deviceInfo: { flex: 1, alignItems: "flex-end" },
   deviceName: { fontSize: 15 },
-  deviceId: { fontSize: 12, marginTop: 2 },
-  connectedWrap: { width: "100%", gap: 16 },
+  deviceId: { fontSize: 11, marginTop: 2, letterSpacing: 0.5 },
+  connectedWrap: { width: "100%", gap: 14 },
   connectedHeader: {
     flexDirection: "row-reverse",
     alignItems: "center",
-    gap: 12,
-    padding: 16,
-    borderRadius: 16,
-    borderWidth: 1,
+    gap: 12, padding: 16,
+    borderRadius: 16, borderWidth: 1,
   },
+  connectedBadge: { flex: 1, flexDirection: "row-reverse", alignItems: "center", gap: 6 },
+  connectedDot: { width: 8, height: 8, borderRadius: 4 },
+  connectedLive: { fontSize: 12 },
   connectedLabel: { fontSize: 12 },
   connectedName: { fontSize: 16 },
+  refreshNote: {
+    flexDirection: "row-reverse",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 10,
+  },
+  refreshText: { fontSize: 12 },
   dataTitle: { fontSize: 18, textAlign: "right" },
   healthGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
   healthCard: {
     width: "47%",
-    borderRadius: 16,
-    borderWidth: 1,
+    borderRadius: 16, borderWidth: 1,
     padding: 14,
     alignItems: "flex-end",
     gap: 4,
@@ -323,10 +472,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 8,
-    padding: 14,
-    borderRadius: 12,
-    borderWidth: 1,
+    gap: 8, padding: 14,
+    borderRadius: 12, borderWidth: 1,
   },
   disconnectText: { fontSize: 14 },
 });
