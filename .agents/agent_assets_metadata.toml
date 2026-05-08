@@ -35,3 +35,9 @@ id = "6TuJ2_4UwVotCc6QE4IMT"
 uri = "file://sehatak-android.tar.gz"
 type = "unspecified"
 title = "sehatak-android — مشروع Android Studio"
+
+[[outputs]]
+id = "MP65LPk5gwR1fTELe8NBw"
+uri = "file://sehatak-android-v2.tar.gz"
+type = "unspecified"
+title = "sehatak-android — النسخة الكاملة (مع package.json)"
