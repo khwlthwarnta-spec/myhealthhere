@@ -29,3 +29,9 @@ id = "va5CwtcwBJ1XvwxzvaqCh"
 uri = "file://sehatak-app.tar.gz"
 type = "unspecified"
 title = "sehatak-app.tar.gz — ملفات محدّثة"
+
+[[outputs]]
+id = "6TuJ2_4UwVotCc6QE4IMT"
+uri = "file://sehatak-android.tar.gz"
+type = "unspecified"
+title = "sehatak-android — مشروع Android Studio"
