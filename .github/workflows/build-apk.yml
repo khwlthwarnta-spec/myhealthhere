@@ -63,11 +63,11 @@ jobs:
         run: |
           APK_PATH=$(find artifacts/sehatak-app/android -name "*.apk" | head -1)
           echo "Found APK: $APK_PATH"
-          cp "$APK_PATH" sehatak.apk
+          cp "$APK_PATH" sehatak-app.apk
 
       - name: Upload APK as artifact
         uses: actions/upload-artifact@v4
         with:
-          name: sehatak
-          path: sehatak.apk
+          name: sehatak-apk
+          path: sehatak-app.apk
           retention-days: 30
