@@ -57,13 +57,13 @@ jobs:
 
       - name: Build APK
         working-directory: artifacts/sehatak-app/android
-        run: ./gradlew assembleRelease --no-daemon
+        run: ./gradlew assembleDebug --no-daemon
         env:
           GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx4g -Dorg.gradle.daemon=false"
 
       - name: Find and rename APK
         run: |
-          APK_PATH=$(find artifacts/sehatak-app/android -name "*.apk" | head -1)
+          APK_PATH=$(find artifacts/sehatak-app/android/app/build/outputs/apk/debug -name "*.apk" | head -1)
           echo "Found APK: $APK_PATH"
           cp "$APK_PATH" sehatak-app.apk
 
