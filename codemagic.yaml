@@ -15,8 +15,7 @@ workflows:
           pnpm --version
 
       - name: Install workspace dependencies
-        script: |
-          pnpm install --no-frozen-lockfile
+        script: pnpm install --no-frozen-lockfile
 
       - name: Expo prebuild — generate Android project
         script: |
@@ -26,13 +25,24 @@ workflows:
       - name: Fix gradlew permissions
         script: chmod +x $APP_DIR/android/gradlew
 
-      - name: Build debug APK
+      - name: Reduce APK size — arm64-v8a only
+        script: |
+          GRADLE=$APP_DIR/android/app/build.gradle
+          # Insert ndk abiFilters right after "defaultConfig {"
+          sed -i '/defaultConfig {/a\        ndk { abiFilters "arm64-v8a" }' $GRADLE
+
+      - name: Build release APK (debug key — no store signing needed)
         script: |
           cd $APP_DIR/android
-          ./gradlew assembleDebug --no-daemon --stacktrace
+          ./gradlew assembleRelease --no-daemon
+
+      - name: Rename APK to sehatak.apk
+        script: |
+          find $APP_DIR/android/app/build/outputs/apk -name "*.apk" \
+            -exec mv {} $APP_DIR/android/app/build/outputs/apk/release/sehatak.apk \;
 
     artifacts:
-      - artifacts/sehatak-app/android/app/build/outputs/apk/debug/*.apk
+      - artifacts/sehatak-app/android/app/build/outputs/apk/release/sehatak.apk
 
     publishing:
       email:
