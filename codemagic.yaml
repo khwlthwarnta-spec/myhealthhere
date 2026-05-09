@@ -11,7 +11,7 @@ workflows:
     scripts:
       - name: Setup pnpm
         script: |
-          npm install -g pnpm@9 --force
+          npm install -g pnpm@10 --force
           pnpm --version
 
       - name: Install workspace dependencies
