@@ -1,0 +1,73 @@
+name: Build Android APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - 'artifacts/sehatak-app/**'
+
+jobs:
+  build:
+    name: Build APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Setup Java (required for Android build)
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Expo CLI
+        run: pnpm add -g expo-cli @expo/cli eas-cli
+
+      - name: Run Expo Prebuild (generate native Android project)
+        working-directory: artifacts/sehatak-app
+        run: |
+          npx expo prebuild --platform android --clean --no-install
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Make Gradlew executable
+        working-directory: artifacts/sehatak-app/android
+        run: chmod +x gradlew
+
+      - name: Build APK (debug)
+        working-directory: artifacts/sehatak-app/android
+        run: ./gradlew assembleRelease --no-daemon
+        env:
+          GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx4g -Dorg.gradle.daemon=false"
+
+      - name: Find and rename APK
+        run: |
+          APK_PATH=$(find artifacts/sehatak-app/android -name "*.apk" | head -1)
+          echo "Found APK: $APK_PATH"
+          cp "$APK_PATH" sehatak-app.apk
+
+      - name: Upload APK as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: sehatak-apk
+          path: sehatak-app.apk
+          retention-days: 30
