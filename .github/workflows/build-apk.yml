@@ -42,28 +42,48 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Install Expo CLI
-        run: pnpm add -g expo-cli @expo/cli eas-cli
+        run: npm install -g @expo/cli
 
-      - name: Run Expo Prebuild (generate native Android project)
+      - name: Run Expo Prebuild
         working-directory: artifacts/sehatak-app
-        run: |
-          npx expo prebuild --platform android --clean --no-install
+        run: npx expo prebuild --platform android --clean --no-install
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Create assets directory
+        run: mkdir -p artifacts/sehatak-app/android/app/src/main/assets
+
+      - name: Bundle JavaScript manually
+        working-directory: artifacts/sehatak-app
+        run: |
+          npx react-native bundle \
+            --platform android \
+            --dev false \
+            --entry-file node_modules/expo-router/entry.js \
+            --bundle-output android/app/src/main/assets/index.android.bundle \
+            --assets-dest android/app/src/main/res/ \
+            --reset-cache
+        env:
+          NODE_ENV: production
+          NODE_PATH: "${{ github.workspace }}/node_modules:${{ github.workspace }}/artifacts/sehatak-app/node_modules"
 
       - name: Make Gradlew executable
         working-directory: artifacts/sehatak-app/android
         run: chmod +x gradlew
 
-      - name: Build APK
+      - name: Build APK (skip JS bundle step — already done)
         working-directory: artifacts/sehatak-app/android
-        run: ./gradlew assembleDebug --no-daemon
+        run: |
+          ./gradlew assembleDebug \
+            -x bundleDebugJsAndAssets \
+            -x createBundleDebugJsAndAssets \
+            --no-daemon
         env:
           GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx4g -Dorg.gradle.daemon=false"
 
       - name: Find and rename APK
         run: |
-          APK_PATH=$(find artifacts/sehatak-app/android/app/build/outputs/apk/debug -name "*.apk" | head -1)
+          APK_PATH=$(find artifacts/sehatak-app/android/app/build/outputs/apk -name "*.apk" | head -1)
           echo "Found APK: $APK_PATH"
           cp "$APK_PATH" sehatak-app.apk
 
