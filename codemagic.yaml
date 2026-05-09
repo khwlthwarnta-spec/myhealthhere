@@ -1,0 +1,38 @@
+workflows:
+  android-apk:
+    name: "صحتك أولاً — Android APK"
+    max_build_duration: 60
+    environment:
+      node: "20"
+      java: "17"
+      vars:
+        APP_DIR: artifacts/sehatak-app
+
+    scripts:
+      - name: Install pnpm
+        script: npm install -g pnpm@9
+
+      - name: Install workspace dependencies
+        script: pnpm install --frozen-lockfile
+
+      - name: Expo prebuild (generate Android project)
+        script: |
+          cd $APP_DIR
+          npx expo prebuild --platform android --clean --no-install
+
+      - name: Build debug APK
+        script: |
+          cd $APP_DIR/android
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon
+
+    artifacts:
+      - artifacts/sehatak-app/android/app/build/outputs/apk/debug/*.apk
+
+    publishing:
+      email:
+        recipients:
+          - $CM_SUBMITTER_EMAIL
+        notify:
+          success: true
+          failure: true
