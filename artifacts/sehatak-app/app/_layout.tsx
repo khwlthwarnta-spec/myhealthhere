@@ -6,7 +6,7 @@ import {
   useFonts,
 } from "@expo-google-fonts/tajawal";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Stack } from "expo-router";
+import { Stack, useRouter, useSegments } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import React, { useContext, useEffect, useRef, useState } from "react";
 import { Animated, I18nManager, StyleSheet, View } from "react-native";
@@ -15,6 +15,7 @@ import { KeyboardProvider } from "react-native-keyboard-controller";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { SplashLoader } from "@/components/SplashLoader";
+import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { ThemeContext, ThemeProvider } from "@/hooks/useTheme";
 
 I18nManager.forceRTL(true);
@@ -33,7 +34,7 @@ function ThemeTransitionOverlay() {
     prevScheme.current = resolvedScheme;
     Animated.sequence([
       Animated.timing(overlayOp, { toValue: 0.35, duration: 180, useNativeDriver: true }),
-      Animated.timing(overlayOp, { toValue: 0,    duration: 320, useNativeDriver: true }),
+      Animated.timing(overlayOp, { toValue: 0, duration: 320, useNativeDriver: true }),
     ]).start();
   }, [resolvedScheme]);
 
@@ -52,19 +53,41 @@ function ThemeTransitionOverlay() {
   );
 }
 
+function AuthGuard({ children }: { children: React.ReactNode }) {
+  const { user, isLoading } = useAuth();
+  const router = useRouter();
+  const segments = useSegments();
+
+  useEffect(() => {
+    if (isLoading) return;
+
+    const inAuthGroup = segments[0] === "(auth)";
+
+    if (!user && !inAuthGroup) {
+      router.replace("/(auth)/login");
+    } else if (user && inAuthGroup) {
+      router.replace("/(tabs)");
+    }
+  }, [user, isLoading, segments]);
+
+  return <>{children}</>;
+}
+
 function RootLayoutNav() {
   return (
     <View style={{ flex: 1 }}>
-      <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-      </Stack>
+      <AuthGuard>
+        <Stack screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+        </Stack>
+      </AuthGuard>
       <ThemeTransitionOverlay />
     </View>
   );
 }
 
 export default function RootLayout() {
-  // Only load Tajawal fonts — vector-icons fonts are auto-linked in the APK
   const [fontsLoaded, fontError] = useFonts({
     Tajawal_400Regular,
     Tajawal_500Medium,
@@ -72,7 +95,6 @@ export default function RootLayout() {
     Tajawal_800ExtraBold,
   });
 
-  // Fallback: if fonts haven't loaded after 4s, show app anyway
   const [timedOut, setTimedOut] = useState(false);
   useEffect(() => {
     const t = setTimeout(() => setTimedOut(true), 4000);
@@ -85,7 +107,6 @@ export default function RootLayout() {
     if (ready) SplashScreen.hideAsync();
   }, [ready]);
 
-  // Show our custom heartbeat splash while loading
   if (!ready) return <SplashLoader />;
 
   return (
@@ -95,7 +116,9 @@ export default function RootLayout() {
           <QueryClientProvider client={queryClient}>
             <GestureHandlerRootView style={{ flex: 1 }}>
               <KeyboardProvider>
-                <RootLayoutNav />
+                <AuthProvider>
+                  <RootLayoutNav />
+                </AuthProvider>
               </KeyboardProvider>
             </GestureHandlerRootView>
           </QueryClientProvider>

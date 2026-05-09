@@ -86,3 +86,11 @@ externalPort = 3002
 
 [nix]
 channel = "stable-25_05"
+
+[userenv]
+
+[userenv.shared]
+JWT_SECRET = "c645dc55210c1032311c67c0dbb62477326891c4d7a2ac88511e4931bad32349a2062a323560b550bc842a06e5ea694d"
+EXPO_PUBLIC_API_URL = "https://bbb7fde6-d2f6-4a0b-af69-a0227ca0dff4-8080.sisko.replit.dev"
+SMTP_HOST = "smtp.gmail.com"
+SMTP_PORT = "587"

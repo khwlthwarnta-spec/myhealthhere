@@ -60,6 +60,7 @@
   "dependencies": {
     "@expo-google-fonts/tajawal": "^0.4.1",
     "expo": "~54.0.34",
+    "expo-secure-store": "^55.0.13",
     "react": "19.1.0",
     "react-native": "0.81.5"
   }
