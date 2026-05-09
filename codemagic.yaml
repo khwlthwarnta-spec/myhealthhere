@@ -27,17 +27,9 @@ workflows:
 
       - name: Reduce APK size — arm64-v8a only
         script: |
-          python3 - <<'EOF'
-import sys
-path = "artifacts/sehatak-app/android/app/build.gradle"
-with open(path, "r") as f:
-    content = f.read()
-inject = '\n        ndk { abiFilters "arm64-v8a" }'
-content = content.replace("defaultConfig {", "defaultConfig {" + inject, 1)
-with open(path, "w") as f:
-    f.write(content)
-print("ABI filter injected successfully")
-EOF
+          sed -i 's/defaultConfig {/defaultConfig {\n        ndk { abiFilters "arm64-v8a" }/' \
+            artifacts/sehatak-app/android/app/build.gradle
+          echo "ABI filter injected successfully"
 
       - name: Build release APK (debug key — no store signing needed)
         script: |
