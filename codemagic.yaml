@@ -9,22 +9,27 @@ workflows:
         APP_DIR: artifacts/sehatak-app
 
     scripts:
-      - name: Install pnpm
-        script: npm install -g pnpm@9
+      - name: Setup pnpm
+        script: |
+          npm install -g pnpm@9 --force
+          pnpm --version
 
       - name: Install workspace dependencies
-        script: pnpm install --frozen-lockfile
+        script: |
+          pnpm install --no-frozen-lockfile
 
-      - name: Expo prebuild (generate Android project)
+      - name: Expo prebuild — generate Android project
         script: |
           cd $APP_DIR
           npx expo prebuild --platform android --clean --no-install
 
+      - name: Fix gradlew permissions
+        script: chmod +x $APP_DIR/android/gradlew
+
       - name: Build debug APK
         script: |
           cd $APP_DIR/android
-          chmod +x gradlew
-          ./gradlew assembleDebug --no-daemon
+          ./gradlew assembleDebug --no-daemon --stacktrace
 
     artifacts:
       - artifacts/sehatak-app/android/app/build/outputs/apk/debug/*.apk
