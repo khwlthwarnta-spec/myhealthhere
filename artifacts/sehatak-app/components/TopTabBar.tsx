@@ -25,6 +25,17 @@ export function TopTabBar({ state, descriptors, navigation }: any) {
   const isWeb = Platform.OS === "web";
   const topPad = isWeb ? 0 : insets.top;
 
+  const isDark = resolvedScheme === "dark";
+
+  // Theme button: vivid contrasting colors regardless of mode
+  const themeIcon  = isDark ? "weather-sunny"  : "weather-night";
+  const themeColor = isDark ? "#f59e0b"         : "#6366f1";   // amber / indigo
+  const themeBg    = isDark ? "#2d1f04"         : "#eef2ff";   // warm dark / indigo tint
+
+  // Bluetooth button
+  const btColor  = btConnected ? colors.primary : "#3b82f6";  // green / blue
+  const btBg     = btConnected ? colors.primary + "22"       : isDark ? "#0c1a2e" : "#eff6ff";
+
   return (
     <>
       <View
@@ -38,21 +49,18 @@ export function TopTabBar({ state, descriptors, navigation }: any) {
         ]}
       >
         <View style={styles.inner}>
-          {/* Right side: Bluetooth + Theme toggle */}
+          {/* Right side: Theme toggle + Bluetooth */}
           <View style={styles.rightBtns}>
+
             {/* Theme toggle */}
             <Pressable
               onPress={() => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                 toggleTheme();
               }}
-              style={[styles.iconBtn, { backgroundColor: colors.muted }]}
+              style={[styles.iconBtn, { backgroundColor: themeBg, borderColor: themeColor + "55" }]}
             >
-              <MaterialCommunityIcons
-                name={resolvedScheme === "dark" ? "weather-sunny" : "weather-night"}
-                size={18}
-                color={colors.mutedForeground}
-              />
+              <MaterialCommunityIcons name={themeIcon} size={20} color={themeColor} />
             </Pressable>
 
             {/* Bluetooth */}
@@ -61,17 +69,16 @@ export function TopTabBar({ state, descriptors, navigation }: any) {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                 setBtVisible(true);
               }}
-              style={[
-                styles.iconBtn,
-                { backgroundColor: btConnected ? colors.primary + "25" : colors.muted },
-              ]}
+              style={[styles.iconBtn, { backgroundColor: btBg, borderColor: btColor + "55" }]}
             >
               <MaterialCommunityIcons
                 name={btConnected ? "bluetooth-audio" : "bluetooth"}
-                size={18}
-                color={btConnected ? colors.primary : colors.mutedForeground}
+                size={20}
+                color={btColor}
               />
-              {btConnected && <View style={[styles.connectedDot, { backgroundColor: "#22c55e" }]} />}
+              {btConnected && (
+                <View style={[styles.connectedDot, { backgroundColor: "#22c55e" }]} />
+              )}
             </Pressable>
           </View>
 
@@ -79,7 +86,7 @@ export function TopTabBar({ state, descriptors, navigation }: any) {
           <View style={styles.tabs}>
             {state.routes.map((route: any, index: number) => {
               const isFocused = state.index === index;
-              const tabInfo = TAB_ICONS[route.name] ?? { icon: "circle", label: route.name };
+              const tabInfo   = TAB_ICONS[route.name] ?? { icon: "circle", label: route.name };
 
               const onPress = () => {
                 const event = navigation.emit({ type: "tabPress", target: route.key, canPreventDefault: true });
@@ -152,8 +159,9 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
   iconBtn: {
-    width: 36, height: 36,
-    borderRadius: 18,
+    width: 38, height: 38,
+    borderRadius: 19,
+    borderWidth: 1.5,
     alignItems: "center",
     justifyContent: "center",
     position: "relative",
@@ -161,7 +169,7 @@ const styles = StyleSheet.create({
   connectedDot: {
     position: "absolute",
     top: 4, right: 4,
-    width: 7, height: 7,
+    width: 8, height: 8,
     borderRadius: 4,
     borderWidth: 1.5,
     borderColor: "transparent",

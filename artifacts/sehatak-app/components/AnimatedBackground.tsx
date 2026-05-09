@@ -45,8 +45,41 @@ const SPARKS = Array.from({ length: 26 }, (_, i) => ({
 // ─── Heart ────────────────────────────────────────────────────────────────────
 const HEART_PATH =
   "M50,82 C25,66 4,52 4,32 C4,17 13,8 24,8 C33,8 41,13 50,23 C59,13 67,8 76,8 C87,8 96,17 96,32 C96,52 75,66 50,82 Z";
-const ECG_PATH =
-  "M0,30 L18,30 L22,26 L25,30 L28,30 L30,5 L33,55 L36,30 L44,30 L47,22 L52,30 L130,30";
+
+// One full ECG cardiac cycle (width=160, baseline y=35, total height=70)
+// P wave → PQ → QRS complex → ST → T wave → TP segment
+const ECG_CYCLE_W = 160;
+const NUM_CYCLES  = Math.ceil(width / ECG_CYCLE_W) + 4;
+
+function buildEcgPath(): string {
+  let d = `M0,35`;
+  for (let i = 0; i < NUM_CYCLES; i++) {
+    const o = i * ECG_CYCLE_W;
+    d += ` L${o+26},35`;
+    // P wave (small smooth bump)
+    d += ` C${o+28},35 ${o+29},26 ${o+32},24`;
+    d += ` C${o+35},22 ${o+37},28 ${o+39},35`;
+    // PQ segment
+    d += ` L${o+46},35`;
+    // Q dip
+    d += ` L${o+48},39`;
+    // R peak (tall spike)
+    d += ` L${o+50},3`;
+    // S dip
+    d += ` L${o+53},58`;
+    // return to baseline
+    d += ` L${o+56},35`;
+    // ST segment
+    d += ` L${o+67},35`;
+    // T wave (smooth rounded bump)
+    d += ` C${o+70},35 ${o+74},17 ${o+80},17`;
+    d += ` C${o+86},17 ${o+90},35 ${o+96},35`;
+    // TP back to baseline (long flat)
+    d += ` L${o+ECG_CYCLE_W},35`;
+  }
+  return d;
+}
+const ECG_WIDE_PATH = buildEcgPath();
 
 // ═════════════════════════════════════════════════════════════════════════════
 // PHASE 0 — Clouds + Rain
@@ -271,96 +304,171 @@ function FireScene() {
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
-// PHASE 2 — Beating Heart + ECG
+// PHASE 2 — Beating Heart (top) + Full-width real ECG monitor (bottom)
 // ═════════════════════════════════════════════════════════════════════════════
 
+const ECG_STRIP_H = 88;   // height of the ECG monitor strip
+const ECG_BL      = 44;   // baseline y inside the 88px strip
+
+// Rebuild path scaled to the strip height (baseline=44, spike to y=4, dip to y=72)
+function buildEcgPathScaled(): string {
+  let d = `M0,${ECG_BL}`;
+  for (let i = 0; i < NUM_CYCLES; i++) {
+    const o = i * ECG_CYCLE_W;
+    d += ` L${o + 26},${ECG_BL}`;
+    // P wave
+    d += ` C${o + 28},${ECG_BL} ${o + 29},${ECG_BL - 11} ${o + 32},${ECG_BL - 13}`;
+    d += ` C${o + 35},${ECG_BL - 15} ${o + 37},${ECG_BL - 9} ${o + 39},${ECG_BL}`;
+    // PQ segment
+    d += ` L${o + 46},${ECG_BL}`;
+    // Q dip
+    d += ` L${o + 48},${ECG_BL + 5}`;
+    // R peak — tall spike
+    d += ` L${o + 50},4`;
+    // S dip
+    d += ` L${o + 53},${ECG_BL + 28}`;
+    // return to baseline
+    d += ` L${o + 56},${ECG_BL}`;
+    // ST segment
+    d += ` L${o + 67},${ECG_BL}`;
+    // T wave
+    d += ` C${o + 70},${ECG_BL} ${o + 74},${ECG_BL - 20} ${o + 80},${ECG_BL - 20}`;
+    d += ` C${o + 86},${ECG_BL - 20} ${o + 90},${ECG_BL} ${o + 96},${ECG_BL}`;
+    // TP back to flat
+    d += ` L${o + ECG_CYCLE_W},${ECG_BL}`;
+  }
+  return d;
+}
+const ECG_MONITOR_PATH = buildEcgPathScaled();
+const ECG_TOTAL_W      = NUM_CYCLES * ECG_CYCLE_W;
+
+function EcgMonitor() {
+  const scrollX = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    // Scroll one cycle left then snap back → seamless loop
+    Animated.loop(
+      Animated.timing(scrollX, {
+        toValue: -ECG_CYCLE_W,
+        duration: 900,           // ~67 BPM  
+        useNativeDriver: true,
+      })
+    ).start();
+  }, []);
+
+  return (
+    <View style={styles.ecgMonitor} pointerEvents="none">
+      {/* Dark monitor background */}
+      <View style={styles.ecgBg} />
+      {/* Horizontal grid lines */}
+      {[22, 44, 66].map(y => (
+        <View key={y} style={[styles.ecgGrid, { top: y }]} />
+      ))}
+      {/* Scrolling waveform — clipped to monitor width */}
+      <View style={styles.ecgClip}>
+        <Animated.View style={{ transform: [{ translateX: scrollX }] }}>
+          <Svg
+            width={ECG_TOTAL_W}
+            height={ECG_STRIP_H}
+            viewBox={`0 0 ${ECG_TOTAL_W} ${ECG_STRIP_H}`}
+          >
+            {/* Faint glow trail */}
+            <Path
+              d={ECG_MONITOR_PATH}
+              stroke="#00ff88"
+              strokeWidth={6}
+              fill="none"
+              strokeLinecap="round"
+              opacity={0.12}
+            />
+            {/* Main bright line */}
+            <Path
+              d={ECG_MONITOR_PATH}
+              stroke="#00ff88"
+              strokeWidth={2}
+              fill="none"
+              strokeLinecap="round"
+              opacity={0.95}
+            />
+          </Svg>
+        </Animated.View>
+      </View>
+    </View>
+  );
+}
+
 function HeartScene() {
-  const scale   = useRef(new Animated.Value(1)).current;
-  const glowOp  = useRef(new Animated.Value(0.3)).current;
-  const ecgX    = useRef(new Animated.Value(0)).current;
-  const pulse1  = useRef(new Animated.Value(1)).current;
-  const pulse2  = useRef(new Animated.Value(1)).current;
+  const scale    = useRef(new Animated.Value(1)).current;
+  const glowOp   = useRef(new Animated.Value(0.3)).current;
+  const pulse1   = useRef(new Animated.Value(1)).current;
+  const pulse2   = useRef(new Animated.Value(1)).current;
   const pulse1Op = useRef(new Animated.Value(0.6)).current;
   const pulse2Op = useRef(new Animated.Value(0.4)).current;
 
   useEffect(() => {
-    // Lub-dub beat
+    // Lub-dub beat synced to ~67 BPM (900ms cycle)
     Animated.loop(
       Animated.sequence([
-        Animated.timing(scale, { toValue: 1.25, duration: 110, useNativeDriver: true }),
-        Animated.timing(scale, { toValue: 0.95, duration: 100, useNativeDriver: true }),
-        Animated.timing(scale, { toValue: 1.18, duration: 90,  useNativeDriver: true }),
-        Animated.timing(scale, { toValue: 1.0,  duration: 200, useNativeDriver: true }),
-        Animated.delay(700),
+        Animated.timing(scale, { toValue: 1.28, duration: 100, useNativeDriver: true }),
+        Animated.timing(scale, { toValue: 0.94, duration: 90,  useNativeDriver: true }),
+        Animated.timing(scale, { toValue: 1.18, duration: 80,  useNativeDriver: true }),
+        Animated.timing(scale, { toValue: 1.0,  duration: 180, useNativeDriver: true }),
+        Animated.delay(450),
       ])
     ).start();
 
     // Glow pulse
     Animated.loop(
       Animated.sequence([
-        Animated.timing(glowOp, { toValue: 0.85, duration: 400, useNativeDriver: true }),
-        Animated.timing(glowOp, { toValue: 0.25, duration: 800, useNativeDriver: true }),
+        Animated.timing(glowOp, { toValue: 0.9,  duration: 380, useNativeDriver: true }),
+        Animated.timing(glowOp, { toValue: 0.2,  duration: 700, useNativeDriver: true }),
       ])
     ).start();
 
-    // ECG scroll
-    Animated.loop(
-      Animated.timing(ecgX, { toValue: -130, duration: 2200, useNativeDriver: true })
-    ).start();
-
-    // Pulse rings
+    // Expanding pulse rings
     const ring = (val: Animated.Value, opVal: Animated.Value, delay: number) => {
       Animated.loop(
         Animated.sequence([
           Animated.delay(delay),
           Animated.parallel([
-            Animated.timing(val,   { toValue: 3.2, duration: 1100, useNativeDriver: true }),
-            Animated.timing(opVal, { toValue: 0,   duration: 1100, useNativeDriver: true }),
+            Animated.timing(val,   { toValue: 3.4, duration: 1000, useNativeDriver: true }),
+            Animated.timing(opVal, { toValue: 0,   duration: 1000, useNativeDriver: true }),
           ]),
           Animated.parallel([
-            Animated.timing(val,   { toValue: 1,   duration: 0,    useNativeDriver: true }),
-            Animated.timing(opVal, { toValue: 0.5, duration: 0,    useNativeDriver: true }),
+            Animated.timing(val,   { toValue: 1,   duration: 0, useNativeDriver: true }),
+            Animated.timing(opVal, { toValue: 0.5, duration: 0, useNativeDriver: true }),
           ]),
         ])
       ).start();
     };
     ring(pulse1, pulse1Op, 0);
-    ring(pulse2, pulse2Op, 550);
+    ring(pulse2, pulse2Op, 500);
   }, []);
 
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents="none">
-      <View style={[StyleSheet.absoluteFill, { backgroundColor: "#08060f" }]} />
-      {/* Ambient */}
-      <View style={[styles.orb, { backgroundColor: "#7f1d1d", width: 280, height: 280, top: 20,  left: width * 0.15, opacity: 0.18 }]} />
-      <View style={[styles.orb, { backgroundColor: "#312e81", width: 200, height: 200, top: 80,  right: -30,         opacity: 0.12 }]} />
-      <View style={[styles.orb, { backgroundColor: "#1e1b4b", width: 160, height: 160, bottom: 0, left: 0,            opacity: 0.15 }]} />
+      <View style={[StyleSheet.absoluteFill, { backgroundColor: "#07050e" }]} />
+      {/* Ambient glows */}
+      <View style={[styles.orb, { backgroundColor: "#7f1d1d", width: 260, height: 260, top: 10,  left: width * 0.18, opacity: 0.20 }]} />
+      <View style={[styles.orb, { backgroundColor: "#312e81", width: 180, height: 180, top: 60,  right: -20,         opacity: 0.13 }]} />
+      <View style={[styles.orb, { backgroundColor: "#1e1b4b", width: 160, height: 160, bottom: ECG_STRIP_H + 10, left: 0, opacity: 0.14 }]} />
 
-      {/* Heart center */}
+      {/* Beating heart — upper center */}
       <View style={styles.heartWrap}>
-        {/* Pulse rings */}
         <Animated.View style={[styles.pulseRing, { transform: [{ scale: pulse1 }], opacity: pulse1Op, borderColor: "#e11d48" }]} />
         <Animated.View style={[styles.pulseRing, { transform: [{ scale: pulse2 }], opacity: pulse2Op, borderColor: "#fb7185" }]} />
-
-        {/* Core glow */}
         <Animated.View style={[styles.heartGlow, { opacity: glowOp }]} />
-
-        {/* Beating heart */}
         <Animated.View style={{ transform: [{ scale }] }}>
-          <Svg width={130} height={117} viewBox="0 0 100 90">
+          <Svg width={140} height={126} viewBox="0 0 100 90">
             <Path d={HEART_PATH} fill="#e11d48"  opacity={0.95} />
-            <Path d={HEART_PATH} fill="none" stroke="#fb7185" strokeWidth={1.6} opacity={0.5} />
-            <Path d={HEART_PATH} fill="none" stroke="#fda4af" strokeWidth={0.8} opacity={0.3} />
-          </Svg>
-        </Animated.View>
-
-        {/* ECG line */}
-        <Animated.View style={[styles.ecgWrap, { transform: [{ translateX: ecgX }] }]}>
-          <Svg width={260} height={60} viewBox="0 0 130 60">
-            <Path d={ECG_PATH} stroke="#fb7185" strokeWidth={2.2} fill="none" strokeLinecap="round" opacity={0.9} />
+            <Path d={HEART_PATH} fill="none" stroke="#fb7185" strokeWidth={1.8} opacity={0.55} />
+            <Path d={HEART_PATH} fill="none" stroke="#fda4af" strokeWidth={0.9} opacity={0.3} />
           </Svg>
         </Animated.View>
       </View>
+
+      {/* Full-width ECG monitor strip — bottom */}
+      <EcgMonitor />
     </View>
   );
 }
@@ -421,27 +529,48 @@ const styles = StyleSheet.create({
   },
   heartWrap: {
     position: "absolute",
-    top: 0, left: 0, right: 0, bottom: 0,
+    top: 0, left: 0, right: 0,
+    bottom: ECG_STRIP_H,
     alignItems: "center",
     justifyContent: "center",
-    gap: 4,
   },
   heartGlow: {
     position: "absolute",
-    width: 180,
-    height: 180,
-    borderRadius: 90,
+    width: 160,
+    height: 160,
+    borderRadius: 80,
     backgroundColor: "#e11d48",
   },
   pulseRing: {
     position: "absolute",
-    width: 90,
-    height: 90,
-    borderRadius: 45,
+    width: 86,
+    height: 86,
+    borderRadius: 43,
     borderWidth: 2,
   },
-  ecgWrap: {
-    marginTop: 4,
+  ecgMonitor: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: ECG_STRIP_H,
+  },
+  ecgBg: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "#020d07",
+    borderTopWidth: 1,
+    borderTopColor: "#0a2e18",
+  },
+  ecgGrid: {
+    position: "absolute",
+    left: 0, right: 0,
+    height: 1,
+    backgroundColor: "#0d3320",
+    opacity: 0.8,
+  },
+  ecgClip: {
+    ...StyleSheet.absoluteFillObject,
+    overflow: "hidden",
   },
   dotsRow: {
     position: "absolute",
