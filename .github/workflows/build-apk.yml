@@ -12,6 +12,8 @@ jobs:
   build:
     name: Build APK
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
     steps:
       - name: Checkout repository
@@ -53,7 +55,7 @@ jobs:
         working-directory: artifacts/sehatak-app/android
         run: chmod +x gradlew
 
-      - name: Build APK (debug)
+      - name: Build APK
         working-directory: artifacts/sehatak-app/android
         run: ./gradlew assembleRelease --no-daemon
         env:
@@ -65,9 +67,20 @@ jobs:
           echo "Found APK: $APK_PATH"
           cp "$APK_PATH" sehatak-app.apk
 
-      - name: Upload APK as artifact
-        uses: actions/upload-artifact@v4
+      - name: Delete old release if exists
+        run: |
+          gh release delete latest --yes 2>/dev/null || true
+          git push --delete origin latest 2>/dev/null || true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create GitHub Release with APK
+        uses: softprops/action-gh-release@v2
         with:
-          name: sehatak-apk
-          path: sehatak-app.apk
-          retention-days: 30
+          tag_name: latest
+          name: "صحتك أولاً — آخر إصدار"
+          body: "تحميل مباشر لتطبيق صحتك أولاً"
+          files: sehatak-app.apk
+          make_latest: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
