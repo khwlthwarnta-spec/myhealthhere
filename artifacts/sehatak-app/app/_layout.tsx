@@ -9,15 +9,23 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import React, { useContext, useEffect, useRef, useState } from "react";
-import { Animated, I18nManager, StyleSheet, View } from "react-native";
+import {
+  Animated,
+  I18nManager,
+  Platform,
+  StyleSheet,
+  View,
+} from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { KeyboardProvider } from "react-native-keyboard-controller";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { SplashLoader } from "@/components/SplashLoader";
 import { ThemeContext, ThemeProvider } from "@/hooks/useTheme";
 
-I18nManager.forceRTL(true);
+if (Platform.OS !== "web") {
+  I18nManager.allowRTL(true);
+  I18nManager.forceRTL(true);
+}
 
 SplashScreen.preventAutoHideAsync();
 
@@ -32,8 +40,16 @@ function ThemeTransitionOverlay() {
     if (prevScheme.current === resolvedScheme) return;
     prevScheme.current = resolvedScheme;
     Animated.sequence([
-      Animated.timing(overlayOp, { toValue: 0.35, duration: 180, useNativeDriver: true }),
-      Animated.timing(overlayOp, { toValue: 0, duration: 320, useNativeDriver: true }),
+      Animated.timing(overlayOp, {
+        toValue: 0.35,
+        duration: 180,
+        useNativeDriver: true,
+      }),
+      Animated.timing(overlayOp, {
+        toValue: 0,
+        duration: 320,
+        useNativeDriver: true,
+      }),
     ]).start();
   }, [resolvedScheme]);
 
@@ -57,6 +73,7 @@ function RootLayoutNav() {
     <View style={{ flex: 1 }}>
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="+not-found" />
       </Stack>
       <ThemeTransitionOverlay />
     </View>
@@ -72,15 +89,18 @@ export default function RootLayout() {
   });
 
   const [timedOut, setTimedOut] = useState(false);
+
   useEffect(() => {
-    const t = setTimeout(() => setTimedOut(true), 4000);
+    const t = setTimeout(() => setTimedOut(true), 3000);
     return () => clearTimeout(t);
   }, []);
 
-  const ready = fontsLoaded || fontError || timedOut;
+  const ready = fontsLoaded || !!fontError || timedOut;
 
   useEffect(() => {
-    if (ready) SplashScreen.hideAsync();
+    if (ready) {
+      SplashScreen.hideAsync().catch(() => {});
+    }
   }, [ready]);
 
   if (!ready) return <SplashLoader />;
@@ -91,9 +111,7 @@ export default function RootLayout() {
         <ErrorBoundary>
           <QueryClientProvider client={queryClient}>
             <GestureHandlerRootView style={{ flex: 1 }}>
-              <KeyboardProvider>
-                <RootLayoutNav />
-              </KeyboardProvider>
+              <RootLayoutNav />
             </GestureHandlerRootView>
           </QueryClientProvider>
         </ErrorBoundary>
