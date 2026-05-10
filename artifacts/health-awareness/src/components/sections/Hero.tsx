@@ -57,22 +57,17 @@ export function Hero() {
               )}
             </Button>
 
-            <motion.a
+            <a
               href={APK_URL}
               download="sehatak.apk"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.9, duration: 0.5 }}
-              className="flex items-center gap-3 px-6 py-3 rounded-full border-2 border-primary/40 bg-primary/10 hover:bg-primary/20 hover:border-primary/70 transition-all hover:-translate-y-0.5 shadow-md group"
+              className="flex items-center gap-3 px-7 py-3 rounded-full bg-[#1a2e22] hover:bg-[#22402e] border border-[#43a876]/60 transition-all hover:-translate-y-0.5 shadow-lg"
             >
-              <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/20 group-hover:bg-primary/30 transition-colors">
-                <Download className="w-4 h-4 text-primary" />
-              </div>
+              <Download className="w-4 h-4 text-[#43a876] flex-shrink-0" />
               <div className="text-right">
-                <div className="text-sm font-bold text-foreground leading-tight">حمّل التطبيق على جهازك</div>
-                <div className="text-[11px] text-muted-foreground">Android • sehatak.apk</div>
+                <div className="text-sm font-bold text-white leading-tight">حمّل التطبيق على جهازك</div>
+                <div className="text-[11px] text-[#43a876]">Android · sehatak.apk</div>
               </div>
-            </motion.a>
+            </a>
           </motion.div>
         </motion.div>
       </div>
