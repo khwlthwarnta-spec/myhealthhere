@@ -29,19 +29,43 @@ workflows:
       - name: Reduce APK size — arm64-v8a only
         script: |
           sed -i 's/defaultConfig {/defaultConfig {\n        ndk { abiFilters "arm64-v8a" }/' \
-            artifacts/sehatak-app/android/app/build.gradle
-          echo "ABI filter injected successfully"
+            $APP_DIR/android/app/build.gradle
+          echo "✅ ABI filter injected"
 
-      - name: Build release APK (debug key — no store signing needed)
+      # ── بناء JS bundle يدوياً (المسار المطلق يضمن صحة الـ monorepo) ────────
+      - name: Bundle JavaScript manually
+        script: |
+          cd $APP_DIR
+          mkdir -p android/app/src/main/assets
+          ENTRY="$PWD/node_modules/expo-router/entry.js"
+          echo "✅ Entry: $ENTRY"
+          EXPO_PUBLIC_API_URL=$EXPO_PUBLIC_API_URL \
+          NODE_ENV=production \
+          npx expo export:embed \
+            --platform android \
+            --entry-file "$ENTRY" \
+            --bundle-output android/app/src/main/assets/index.android.bundle \
+            --assets-dest android/app/src/main/res/ \
+            --dev false
+          echo "✅ Bundle size: $(wc -c < android/app/src/main/assets/index.android.bundle) bytes"
+
+      # ── بناء APK مع تخطي خطوة bundle (تمت يدوياً) ────────────────────────
+      - name: Build release APK
         script: |
           cd $APP_DIR/android
-          ./gradlew assembleRelease --no-daemon --info 2>&1 | grep -E "FAILED|error:|Error:|createBundle|Task :|> Task" || true
-          ./gradlew assembleRelease --no-daemon
+          ./gradlew assembleRelease \
+            -x createBundleReleaseJsAndAssets \
+            -x bundleReleaseJsAndAssets \
+            --no-daemon \
+            --gradle-user-home "$HOME/.gradle"
+        env:
+          GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx4096m -Dorg.gradle.daemon=false"
 
       - name: Rename APK to sehatak.apk
         script: |
           find $APP_DIR/android/app/build/outputs/apk -name "*.apk" \
-            -exec mv {} $APP_DIR/android/app/build/outputs/apk/release/sehatak.apk \;
+            -exec cp {} $APP_DIR/android/app/build/outputs/apk/release/sehatak.apk \;
+          echo "✅ APK ready: sehatak.apk"
 
     artifacts:
       - artifacts/sehatak-app/android/app/build/outputs/apk/release/sehatak.apk
