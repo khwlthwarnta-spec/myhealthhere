@@ -26,19 +26,29 @@ workflows:
       - name: Fix gradlew permissions
         script: chmod +x $APP_DIR/android/gradlew
 
-      - name: Reduce APK size — arm64-v8a only
+      - name: Patch build.gradle — signing + ABI + skip Metro bundle
         script: |
           BUILD_GRADLE="$APP_DIR/android/app/build.gradle"
+
+          # 1. arm64-v8a only (smaller APK)
           sed -i.bak 's/defaultConfig {/defaultConfig {\n        ndk { abiFilters "arm64-v8a" }/' "$BUILD_GRADLE"
           rm -f "$BUILD_GRADLE.bak"
           echo "✅ ABI filter injected"
+
+          # 2. Sign release with debug keystore (no Play Store needed)
+          printf '\nandroid.buildTypes.release.signingConfig = android.signingConfigs.debug\n' >> "$BUILD_GRADLE"
+          echo "✅ Release signed with debug keystore"
+
+          # 3. Skip Metro re-bundling (we pre-build the bundle manually)
+          printf '\ntasks.matching { it.name == "createBundleReleaseJsAndAssets" }.configureEach { onlyIf { false } }\n' >> "$BUILD_GRADLE"
+          echo "✅ Metro bundle task bypassed"
 
       - name: Pre-build JavaScript bundle
         script: |
           cd $APP_DIR
           mkdir -p android/app/src/main/assets
           ENTRY="$PWD/node_modules/expo-router/entry.js"
-          echo "✅ Entry: $ENTRY"
+          echo "Entry: $ENTRY"
           NODE_ENV=production \
           EXPO_PUBLIC_API_URL=$EXPO_PUBLIC_API_URL \
           npx expo export:embed \
@@ -48,16 +58,11 @@ workflows:
             --assets-dest android/app/src/main/res/ \
             --dev false
           BUNDLE_SIZE=$(wc -c < android/app/src/main/assets/index.android.bundle)
-          echo "✅ Bundle size: $BUNDLE_SIZE bytes"
+          echo "Bundle size: $BUNDLE_SIZE bytes"
           if [ "$BUNDLE_SIZE" -lt 100000 ]; then
-            echo "❌ Bundle too small"
+            echo "Bundle too small — aborting"
             exit 1
           fi
-
-      - name: Skip Gradle Metro re-bundling — use pre-built bundle
-        script: |
-          printf '\ntasks.matching { it.name == "createBundleReleaseJsAndAssets" }.configureEach { onlyIf { false } }\n' >> $APP_DIR/android/app/build.gradle
-          echo "✅ Gradle bundle task patched"
 
       - name: Build release APK
         script: |
@@ -65,18 +70,20 @@ workflows:
           cd $APP_DIR/android
           ./gradlew assembleRelease --no-daemon
 
-      - name: Copy APK to sehatak.apk
+      - name: Save as sehatak.apk
         script: |
-          APK=$(find $APP_DIR/android/app/build/outputs/apk -name "*.apk" | grep -v sehatak | head -1)
+          OUTPUT="$APP_DIR/android/app/build/outputs/apk/release"
+          APK=$(find "$OUTPUT" -name "*.apk" ! -name "sehatak.apk" | head -1)
           if [ -z "$APK" ]; then
-            APK=$(find $APP_DIR/android/app/build/outputs/apk -name "*.apk" | head -1)
+            APK=$(find "$OUTPUT" -name "*.apk" | head -1)
           fi
           if [ -z "$APK" ]; then
-            echo "❌ No APK found"
+            echo "No APK found in $OUTPUT"
+            ls -la "$OUTPUT" 2>/dev/null || true
             exit 1
           fi
-          echo "✅ APK: $APK ($(wc -c < "$APK") bytes)"
-          cp "$APK" $APP_DIR/android/app/build/outputs/apk/release/sehatak.apk
+          echo "APK: $APK — $(wc -c < "$APK") bytes"
+          cp "$APK" "$OUTPUT/sehatak.apk"
 
     artifacts:
       - artifacts/sehatak-app/android/app/build/outputs/apk/release/sehatak.apk
