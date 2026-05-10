@@ -738,6 +738,19 @@ export function DiscoverYourself() {
               </Button>
             </DialogTrigger>
 
+            <div className="mt-5 flex justify-center">
+              <a
+                href="https://github.com/khwlthwarnta-spec/myhealthhere/releases/latest/download/sehatak.apk"
+                className="inline-flex items-center gap-2.5 px-6 py-3 rounded-full border border-[#3ddc84]/40 bg-[#3ddc84]/10 hover:bg-[#3ddc84]/20 text-foreground transition-all duration-300 hover:-translate-y-1 shadow-sm hover:shadow-md group"
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="#3ddc84" className="flex-shrink-0">
+                  <path d="M17.523 15.341c-.609 0-1.104.497-1.104 1.104 0 .608.495 1.103 1.104 1.103.608 0 1.103-.495 1.103-1.103 0-.607-.495-1.104-1.103-1.104m-11.046 0c-.608 0-1.104.497-1.104 1.104 0 .608.496 1.103 1.104 1.103.608 0 1.103-.495 1.103-1.103 0-.607-.495-1.104-1.103-1.104m11.41-6.023l1.944-3.367a.405.405 0 0 0-.148-.552.406.406 0 0 0-.553.149L17.13 8.992C15.823 8.348 14.351 7.988 12.787 7.988c-1.565 0-3.038.36-4.343 1.004L6.444 5.548a.406.406 0 0 0-.553-.15.406.406 0 0 0-.149.553l1.945 3.367C4.738 10.643 2.958 13.038 2.958 15.836h18.084c0-2.798-1.78-5.193-4.685-6.518"/>
+                </svg>
+                <span className="text-sm font-semibold">حمّل التطبيق على جهازك</span>
+                <span className="text-xs text-muted-foreground">(Android)</span>
+              </a>
+            </div>
+
             <DialogContent className="sm:max-w-[780px] max-h-[92vh] overflow-y-auto p-0 border-none bg-background/95 backdrop-blur-xl">
               <div className="p-6 md:p-8">
                 <DialogTitle className="text-2xl font-bold mb-2">تحليلك الصحي الشخصي</DialogTitle>

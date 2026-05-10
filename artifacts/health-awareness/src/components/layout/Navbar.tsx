@@ -57,7 +57,18 @@ export function Navbar() {
         style={{ scaleX }}
       />
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-        <HealthLogo />
+        <div className="flex items-center gap-3">
+          <HealthLogo />
+          <a
+            href="https://github.com/khwlthwarnta-spec/myhealthhere/releases/latest/download/sehatak.apk"
+            className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-[#3ddc84]/50 bg-[#3ddc84]/10 hover:bg-[#3ddc84]/20 text-xs font-semibold text-foreground transition-all duration-200 hover:-translate-y-0.5"
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="#3ddc84" className="flex-shrink-0">
+              <path d="M17.523 15.341c-.609 0-1.104.497-1.104 1.104 0 .608.495 1.103 1.104 1.103.608 0 1.103-.495 1.103-1.103 0-.607-.495-1.104-1.103-1.104m-11.046 0c-.608 0-1.104.497-1.104 1.104 0 .608.496 1.103 1.104 1.103.608 0 1.103-.495 1.103-1.103 0-.607-.495-1.104-1.103-1.104m11.41-6.023l1.944-3.367a.405.405 0 0 0-.148-.552.406.406 0 0 0-.553.149L17.13 8.992C15.823 8.348 14.351 7.988 12.787 7.988c-1.565 0-3.038.36-4.343 1.004L6.444 5.548a.406.406 0 0 0-.553-.15.406.406 0 0 0-.149.553l1.945 3.367C4.738 10.643 2.958 13.038 2.958 15.836h18.084c0-2.798-1.78-5.193-4.685-6.518"/>
+            </svg>
+            حمّل التطبيق
+          </a>
+        </div>
 
         <Button variant="ghost" size="icon" onClick={toggleTheme} className="rounded-full">
           {isDark ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
