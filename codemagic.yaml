@@ -28,28 +28,34 @@ workflows:
 
       - name: Reduce APK size — arm64-v8a only
         script: |
-          sed -i 's/defaultConfig {/defaultConfig {\n        ndk { abiFilters "arm64-v8a" }/' \
-            $APP_DIR/android/app/build.gradle
+          BUILD_GRADLE="$APP_DIR/android/app/build.gradle"
+          # macOS-safe sed (works on both GNU and BSD sed)
+          sed -i.bak 's/defaultConfig {/defaultConfig {\n        ndk { abiFilters "arm64-v8a" }/' "$BUILD_GRADLE"
+          rm -f "$BUILD_GRADLE.bak"
           echo "✅ ABI filter injected"
+          grep -A2 "abiFilters" "$BUILD_GRADLE" || echo "⚠️ verify manually"
 
-      # ── بناء JS bundle يدوياً (المسار المطلق يضمن صحة الـ monorepo) ────────
       - name: Bundle JavaScript manually
         script: |
           cd $APP_DIR
           mkdir -p android/app/src/main/assets
           ENTRY="$PWD/node_modules/expo-router/entry.js"
           echo "✅ Entry: $ENTRY"
-          EXPO_PUBLIC_API_URL=$EXPO_PUBLIC_API_URL \
           NODE_ENV=production \
+          EXPO_PUBLIC_API_URL=$EXPO_PUBLIC_API_URL \
           npx expo export:embed \
             --platform android \
             --entry-file "$ENTRY" \
             --bundle-output android/app/src/main/assets/index.android.bundle \
             --assets-dest android/app/src/main/res/ \
             --dev false
-          echo "✅ Bundle size: $(wc -c < android/app/src/main/assets/index.android.bundle) bytes"
+          BUNDLE_SIZE=$(wc -c < android/app/src/main/assets/index.android.bundle)
+          echo "✅ Bundle size: $BUNDLE_SIZE bytes"
+          if [ "$BUNDLE_SIZE" -lt 100000 ]; then
+            echo "❌ Bundle too small — something went wrong"
+            exit 1
+          fi
 
-      # ── بناء APK مع تخطي خطوة bundle (تمت يدوياً) ────────────────────────
       - name: Build release APK
         script: |
           export GRADLE_OPTS="-Dorg.gradle.jvmargs=-Xmx4096m -Dorg.gradle.daemon=false"
@@ -58,11 +64,15 @@ workflows:
             -x createBundleReleaseJsAndAssets \
             --no-daemon
 
-      - name: Rename APK to sehatak.apk
+      - name: Copy APK to sehatak.apk
         script: |
-          find $APP_DIR/android/app/build/outputs/apk -name "*.apk" \
-            -exec cp {} $APP_DIR/android/app/build/outputs/apk/release/sehatak.apk \;
-          echo "✅ APK ready: sehatak.apk"
+          APK=$(find $APP_DIR/android/app/build/outputs/apk -name "*.apk" | head -1)
+          if [ -z "$APK" ]; then
+            echo "❌ No APK found"
+            exit 1
+          fi
+          echo "✅ APK found: $APK ($(wc -c < "$APK") bytes)"
+          cp "$APK" $APP_DIR/android/app/build/outputs/apk/release/sehatak.apk
 
     artifacts:
       - artifacts/sehatak-app/android/app/build/outputs/apk/release/sehatak.apk
