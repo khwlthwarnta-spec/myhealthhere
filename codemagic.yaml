@@ -52,14 +52,12 @@ workflows:
       # ── بناء APK مع تخطي خطوة bundle (تمت يدوياً) ────────────────────────
       - name: Build release APK
         script: |
+          export GRADLE_OPTS="-Dorg.gradle.jvmargs=-Xmx4096m -Dorg.gradle.daemon=false"
           cd $APP_DIR/android
           ./gradlew assembleRelease \
             -x createBundleReleaseJsAndAssets \
             -x bundleReleaseJsAndAssets \
-            --no-daemon \
-            --gradle-user-home "$HOME/.gradle"
-        env:
-          GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx4096m -Dorg.gradle.daemon=false"
+            --no-daemon
 
       - name: Rename APK to sehatak.apk
         script: |
