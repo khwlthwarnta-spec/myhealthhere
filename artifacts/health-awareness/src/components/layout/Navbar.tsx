@@ -60,7 +60,7 @@ export function Navbar() {
         <div className="flex items-center gap-3">
           <HealthLogo />
           <a
-            href="https://github.com/khwlthwarnta-spec/myhealthhere/releases/latest/download/sehatak.apk"
+            href="https://api.codemagic.io//artifacts/.eJwVwcuWQzAAANB_6d45TSvKoosQgzKpeLazcVDUq0SRmq-fM_fuKvRPZYiAQfVFCRO2RXpwQIlyUmTghg2b5PvDfoygyI6pO28TTU3XI4jJdA82_2N6LJlsPBscYL3WtaT81q6taA99E2lDd1FDNFqjNxa30OrYYn9agebHlyJJl-sEl9NvDBbHyHvQ8lcEY_HJin3OeAUjuMxcFvOe1Flervs3PyBNnIIMvVf400bvTvEzX0vrLsXPhSTloaaeIBuSjbnYgHaIheLKc1IH5AS92Rmw08rZFiv8VuOQryCAX0zRYdWnOuZmuMQwDhgNVUtz7ird0NqslkvP590fvjVhhg.jSBZ2A9uoHXeg44xaI-aHJAt9Yg"
             className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-[#3ddc84]/50 bg-[#3ddc84]/10 hover:bg-[#3ddc84]/20 text-xs font-semibold text-foreground transition-all duration-200 hover:-translate-y-0.5"
           >
             <svg width="13" height="13" viewBox="0 0 24 24" fill="#3ddc84" className="flex-shrink-0">

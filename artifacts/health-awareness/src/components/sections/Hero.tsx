@@ -1,7 +1,10 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Square } from "lucide-react";
+import { ArrowLeft, Square, Download } from "lucide-react";
 import { useAutoScrollTour } from "@/hooks/useAutoScrollTour";
+
+const APK_URL =
+  "https://api.codemagic.io//artifacts/.eJwVwcuWQzAAANB_6d45TSvKoosQgzKpeLazcVDUq0SRmq-fM_fuKvRPZYiAQfVFCRO2RXpwQIlyUmTghg2b5PvDfoygyI6pO28TTU3XI4jJdA82_2N6LJlsPBscYL3WtaT81q6taA99E2lDd1FDNFqjNxa30OrYYn9agebHlyJJl-sEl9NvDBbHyHvQ8lcEY_HJin3OeAUjuMxcFvOe1Flervs3PyBNnIIMvVf400bvTvEzX0vrLsXPhSTloaaeIBuSjbnYgHaIheLKc1IH5AS92Rmw08rZFiv8VuOQryCAX0zRYdWnOuZmuMQwDhgNVUtz7ird0NqslkvP590fvjVhhg.jSBZ2A9uoHXeg44xaI-aHJAt9Yg";
 
 export function Hero() {
   const { startTour, stopTour, isActive } = useAutoScrollTour();
@@ -37,7 +40,7 @@ export function Hero() {
             رحلتك نحو الوعي الصحي تبدأ هنا. اكتشف كيف تؤثر عاداتك اليومية، بيئتك، ونمط حياتك على صحتك العامة، وتعلم كيف تتخذ قرارات تبني مستقبلاً أقوى.
           </motion.p>
 
-          <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.6, duration: 0.5 }}>
+          <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.6, duration: 0.5 }} className="flex flex-col items-center gap-4">
             <Button
               size="lg"
               onClick={handleDiscover}
@@ -53,6 +56,23 @@ export function Hero() {
                 <><span>ابدأ الاستكشاف</span><ArrowLeft className="mr-2 h-5 w-5" /></>
               )}
             </Button>
+
+            <motion.a
+              href={APK_URL}
+              download="sehatak.apk"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.9, duration: 0.5 }}
+              className="flex items-center gap-3 px-6 py-3 rounded-full border-2 border-primary/40 bg-primary/10 hover:bg-primary/20 hover:border-primary/70 transition-all hover:-translate-y-0.5 shadow-md group"
+            >
+              <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/20 group-hover:bg-primary/30 transition-colors">
+                <Download className="w-4 h-4 text-primary" />
+              </div>
+              <div className="text-right">
+                <div className="text-sm font-bold text-foreground leading-tight">حمّل التطبيق على جهازك</div>
+                <div className="text-[11px] text-muted-foreground">Android • sehatak.apk</div>
+              </div>
+            </motion.a>
           </motion.div>
         </motion.div>
       </div>

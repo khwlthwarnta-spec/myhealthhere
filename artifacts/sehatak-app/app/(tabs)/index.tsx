@@ -17,8 +17,8 @@ import { AnimatedBackground } from "@/components/AnimatedBackground";
 import { TOP_TAB_HEIGHT } from "@/components/TopTabBar";
 import { useColors } from "@/hooks/useColors";
 
-// ← ضع رابط الـ APK هنا بعد ما تعطيني إياه من Codemagic
-const APK_DOWNLOAD_URL = "https://api.codemagic.io/artifacts/REPLACE_THIS";
+const APK_DOWNLOAD_URL =
+  "https://api.codemagic.io//artifacts/.eJwVwcuWQzAAANB_6d45TSvKoosQgzKpeLazcVDUq0SRmq-fM_fuKvRPZYiAQfVFCRO2RXpwQIlyUmTghg2b5PvDfoygyI6pO28TTU3XI4jJdA82_2N6LJlsPBscYL3WtaT81q6taA99E2lDd1FDNFqjNxa30OrYYn9agebHlyJJl-sEl9NvDBbHyHvQ8lcEY_HJin3OeAUjuMxcFvOe1Flervs3PyBNnIIMvVf400bvTvEzX0vrLsXPhSTloaaeIBuSjbnYgHaIheLKc1IH5AS92Rmw08rZFiv8VuOQryCAX0zRYdWnOuZmuMQwDhgNVUtz7ird0NqslkvP590fvjVhhg.jSBZ2A9uoHXeg44xaI-aHJAt9Yg";
 
 const team = [
   { role: "المبرمج",        name: "حمزه نور الدين" },
