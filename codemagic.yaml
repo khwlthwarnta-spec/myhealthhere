@@ -56,7 +56,6 @@ workflows:
           cd $APP_DIR/android
           ./gradlew assembleRelease \
             -x createBundleReleaseJsAndAssets \
-            -x bundleReleaseJsAndAssets \
             --no-daemon
 
       - name: Rename APK to sehatak.apk
