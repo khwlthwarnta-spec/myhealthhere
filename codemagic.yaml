@@ -29,13 +29,11 @@ workflows:
       - name: Reduce APK size — arm64-v8a only
         script: |
           BUILD_GRADLE="$APP_DIR/android/app/build.gradle"
-          # macOS-safe sed (works on both GNU and BSD sed)
           sed -i.bak 's/defaultConfig {/defaultConfig {\n        ndk { abiFilters "arm64-v8a" }/' "$BUILD_GRADLE"
           rm -f "$BUILD_GRADLE.bak"
           echo "✅ ABI filter injected"
-          grep -A2 "abiFilters" "$BUILD_GRADLE" || echo "⚠️ verify manually"
 
-      - name: Bundle JavaScript manually
+      - name: Pre-build JavaScript bundle
         script: |
           cd $APP_DIR
           mkdir -p android/app/src/main/assets
@@ -52,26 +50,38 @@ workflows:
           BUNDLE_SIZE=$(wc -c < android/app/src/main/assets/index.android.bundle)
           echo "✅ Bundle size: $BUNDLE_SIZE bytes"
           if [ "$BUNDLE_SIZE" -lt 100000 ]; then
-            echo "❌ Bundle too small — something went wrong"
+            echo "❌ Bundle too small"
             exit 1
           fi
+
+      - name: Skip Gradle Metro re-bundling — use pre-built bundle
+        script: |
+          cat >> $APP_DIR/android/app/build.gradle << 'GRADLE_PATCH'
+
+// Use pre-built JS bundle from CI — skip Metro re-bundling
+tasks.matching { it.name == "createBundleReleaseJsAndAssets" }.configureEach {
+    onlyIf { false }
+}
+GRADLE_PATCH
+          echo "✅ Gradle bundle task patched"
 
       - name: Build release APK
         script: |
           export GRADLE_OPTS="-Dorg.gradle.jvmargs=-Xmx4096m -Dorg.gradle.daemon=false"
           cd $APP_DIR/android
-          ./gradlew assembleRelease \
-            -x createBundleReleaseJsAndAssets \
-            --no-daemon
+          ./gradlew assembleRelease --no-daemon
 
       - name: Copy APK to sehatak.apk
         script: |
-          APK=$(find $APP_DIR/android/app/build/outputs/apk -name "*.apk" | head -1)
+          APK=$(find $APP_DIR/android/app/build/outputs/apk -name "*.apk" | grep -v sehatak | head -1)
+          if [ -z "$APK" ]; then
+            APK=$(find $APP_DIR/android/app/build/outputs/apk -name "*.apk" | head -1)
+          fi
           if [ -z "$APK" ]; then
             echo "❌ No APK found"
             exit 1
           fi
-          echo "✅ APK found: $APK ($(wc -c < "$APK") bytes)"
+          echo "✅ APK: $APK ($(wc -c < "$APK") bytes)"
           cp "$APK" $APP_DIR/android/app/build/outputs/apk/release/sehatak.apk
 
     artifacts:
