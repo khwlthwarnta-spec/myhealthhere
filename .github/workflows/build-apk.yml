@@ -16,11 +16,9 @@ jobs:
       contents: write
 
     steps:
-      # ── 1. Checkout ────────────────────────────────────────────────────────
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v4
 
-      # ── 2. Runtimes ────────────────────────────────────────────────────────
       - name: Setup Node.js 20
         uses: actions/setup-node@v4
         with:
@@ -35,36 +33,36 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      # ── 3. Install pnpm & dependencies ─────────────────────────────────────
       - name: Install pnpm
         uses: pnpm/action-setup@v4
         with:
           version: 10
 
-      - name: Install workspace dependencies
-        run: pnpm install --frozen-lockfile --ignore-scripts
+      # ── تثبيت الحزم (بدون ignore-scripts حتى تعمل الحزم الأصيلة) ──────────
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
 
-      # ── 4. Expo Prebuild (generates android/ folder) ───────────────────────
-      - name: Install Expo CLI
-        run: npm install -g @expo/cli@latest
-
-      - name: Run Expo Prebuild
+      # ── توليد مجلد android/ ────────────────────────────────────────────────
+      - name: Expo Prebuild
         working-directory: artifacts/sehatak-app
         run: npx expo prebuild --platform android --clean --no-install
         env:
-          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
           CI: '1'
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
 
-      # ── 5. Bundle JavaScript manually (bypasses Metro server dependency) ───
-      - name: Create Android assets directory
+      # ── بناء JS bundle يدوياً (المسار المطلق هو الحل الصحيح) ──────────────
+      - name: Create assets folder
         run: mkdir -p artifacts/sehatak-app/android/app/src/main/assets
 
-      - name: Bundle JS with expo export:embed
+      - name: Bundle JavaScript
         working-directory: artifacts/sehatak-app
         run: |
+          ENTRY="$PWD/node_modules/expo-router/entry.js"
+          echo "✅ Entry file: $ENTRY"
+          ls -la "$ENTRY"
           npx expo export:embed \
             --platform android \
-            --entry-file $PWD/node_modules/expo-router/entry.js \
+            --entry-file "$ENTRY" \
             --bundle-output android/app/src/main/assets/index.android.bundle \
             --assets-dest android/app/src/main/res/ \
             --dev false
@@ -72,10 +70,9 @@ jobs:
           NODE_ENV: production
           EXPO_PUBLIC_API_URL: 'http://localhost'
 
-      # ── 6. Build APK with Gradle (skip JS re-bundling) ─────────────────────
-      - name: Make Gradlew executable
-        working-directory: artifacts/sehatak-app/android
-        run: chmod +x gradlew
+      # ── بناء APK مع تخطي خطوة bundle (تمت يدوياً) ────────────────────────
+      - name: Make gradlew executable
+        run: chmod +x artifacts/sehatak-app/android/gradlew
 
       - name: Build debug APK
         working-directory: artifacts/sehatak-app/android
@@ -88,33 +85,28 @@ jobs:
         env:
           GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx4096m -Dorg.gradle.daemon=false"
 
-      # ── 7. Locate & rename APK ─────────────────────────────────────────────
-      - name: Locate APK
-        id: apk
+      # ── إيجاد الـ APK ──────────────────────────────────────────────────────
+      - name: Find APK
+        id: find_apk
         run: |
           APK=$(find artifacts/sehatak-app/android/app/build/outputs/apk -name "*.apk" | head -1)
-          echo "path=$APK" >> $GITHUB_OUTPUT
-          echo "Found: $APK"
+          echo "✅ APK found: $APK"
+          cp "$APK" sehatak-app.apk
 
-      - name: Copy APK to workspace root
-        run: cp "${{ steps.apk.outputs.path }}" sehatak-app.apk
-
-      # ── 8. Publish to GitHub Releases (permanent direct link) ──────────────
-      - name: Remove old 'latest' release
+      # ── رفع على GitHub Releases (رابط مباشر دائم) ─────────────────────────
+      - name: Delete old release
         run: |
           gh release delete latest --yes 2>/dev/null || true
           git push --delete origin latest 2>/dev/null || true
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Publish GitHub Release
+      - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: latest
           name: "صحتك أولاً — آخر إصدار"
-          body: |
-            ### تحميل التطبيق
-            اضغط على `sehatak-app.apk` في الأسفل للتحميل المباشر.
+          body: "اضغط على sehatak-app.apk أدناه للتحميل المباشر"
           files: sehatak-app.apk
           make_latest: true
         env:
