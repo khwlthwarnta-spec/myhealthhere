@@ -56,13 +56,7 @@ workflows:
 
       - name: Skip Gradle Metro re-bundling — use pre-built bundle
         script: |
-          cat >> $APP_DIR/android/app/build.gradle << 'GRADLE_PATCH'
-
-// Use pre-built JS bundle from CI — skip Metro re-bundling
-tasks.matching { it.name == "createBundleReleaseJsAndAssets" }.configureEach {
-    onlyIf { false }
-}
-GRADLE_PATCH
+          printf '\ntasks.matching { it.name == "createBundleReleaseJsAndAssets" }.configureEach { onlyIf { false } }\n' >> $APP_DIR/android/app/build.gradle
           echo "✅ Gradle bundle task patched"
 
       - name: Build release APK
